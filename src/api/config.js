@@ -12,7 +12,7 @@ const api = axios.create({
 // Injeta o access token em todas as requisições
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem('access_token');
-  if (token) {
+  if (token && token !== 'undefined' && token !== 'null' && !config.url?.includes('/token/')) {
     config.headers.Authorization = `Bearer ${token}`;
   }
   return config;
@@ -26,18 +26,18 @@ api.interceptors.response.use(
     if (
       error.response?.status === 401 &&
       !original._retry &&
-      !original.url?.includes('/api/token')
+      !original.url?.includes('/token/')
     ) {
       original._retry = true;
       const refreshToken = localStorage.getItem('refresh_token');
       if (refreshToken) {
         try {
-          const { data } = await axios.post(`${BASE_URL}/api/token/refresh`, {
-            refresh_token: refreshToken,
+          const { data } = await axios.post(`${BASE_URL.replace(/\/$/, '')}/token/refresh/`, {
+            refresh: refreshToken,
           });
-          localStorage.setItem('access_token', data.access_token);
-          localStorage.setItem('refresh_token', data.refresh_token);
-          original.headers.Authorization = `Bearer ${data.access_token}`;
+          localStorage.setItem('access_token', data.access);
+          if (data.refresh) localStorage.setItem('refresh_token', data.refresh);
+          original.headers.Authorization = `Bearer ${data.access}`;
           return api(original);
         } catch {
           // refresh falhou — segue para o logout

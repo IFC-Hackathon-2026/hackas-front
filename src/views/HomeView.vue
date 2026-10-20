@@ -1,14 +1,19 @@
 <script setup>
+import { useAuthStore } from '@/stores/auth';
+import { useRouter } from 'vue-router';
 import AppButton from '@/components/AppButton.vue';
-import AppInput from '@/components/AppInput.vue';
 
+const authStore = useAuthStore();
+const router = useRouter();
+
+function logout() {
+  authStore.logout();
+  return router.replace({ name: 'login' });
+}
 </script>
 
 <template>
   <h1>Hackathon 2026 - Home Page</h1>
-  <AppInput
-    label="Email"
-    placeholder="Digite seu email"
-  />
-  <AppButton variant="secondary">Botão</AppButton>
+  <p>Logado: {{ authStore.isAuthenticated }}</p>
+  <AppButton @click="logout" variant="secondary">Logout</AppButton>
 </template>
