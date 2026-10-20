@@ -44,7 +44,6 @@ const value = computed({
             type="button"
             class="password-toggle"
             :aria-label="passwordVisible ? 'Ocultar senha' : 'Mostrar senha'"
-            :aria-controls="inputId"
             :title="passwordVisible ? 'Ocultar senha' : 'Mostrar senha'"
             @click="passwordVisible = !passwordVisible"
         >

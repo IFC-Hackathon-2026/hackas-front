@@ -32,6 +32,11 @@ export const useAuthStore = defineStore('auth', ()=>{
     refreshToken.value = data.refresh;
   }
 
+  async function register(email, password, name, foto){
+      await userService.register(email, password, name, foto)
+      await login(email, password)
+  }
+
   function logout() {
     accessToken.value = null;
     refreshToken.value = null;
@@ -39,5 +44,5 @@ export const useAuthStore = defineStore('auth', ()=>{
     localStorage.removeItem('refresh_token');
   }
 
-  return { accessToken, refreshToken, isAuthenticated, login, logout };
+  return { accessToken, refreshToken, isAuthenticated, login, register, logout };
 });

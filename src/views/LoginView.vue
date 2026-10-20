@@ -1,6 +1,6 @@
 <script setup>
 import { ref } from 'vue';
-import { useRouter } from 'vue-router';
+import { useRouter, RouterLink } from 'vue-router';
 import { useAuthStore } from '@/stores/auth';
 import AppInput from '@/components/AppInput.vue';
 import AppButton from '@/components/AppButton.vue';
@@ -58,6 +58,7 @@ async function login() {
       {{ loading ? 'Entrando...' : 'Entrar' }}
     </AppButton>
   </form>
+  <RouterLink style="margin-top: 1rem;" to="/cadastro">Não tem uma conta? Cadastre-se aqui.</RouterLink>
 </div>
 </template>
 
@@ -68,7 +69,7 @@ async function login() {
   justify-content: center;
   width: 50%;
   margin: 0 auto;
-  height: 80vh;
+  height: 100vh;
 }
 
 .container-title {
