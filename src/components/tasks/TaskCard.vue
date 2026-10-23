@@ -1,22 +1,22 @@
 <script setup>
-const tasks = [
-  { id: 0, title: 'Pesquisar temas do debate', startDate: '03/10', endDate: '05/10' },
-  { id: 1, title: 'Mesas de cooperação teste', startDate: '03/10', endDate: '05/10' },
-  { id: 2, title: 'Titulo da task', startDate: '03/10', endDate: '05/10' },
-]
+const props = defineProps({
+  title: String,
+  startDate: String,
+  endDate: String,
+});
 </script>
 
 <template>
   <div class="list-container">
-    <div v-for="t in tasks" :key="t.id" class="task-card">
-      <span class="mdi mdi-drag-vertical" style="font-size: 1.3rem;" />
+    <div class="task-card">
+      <span class="mdi mdi-drag-vertical" style="font-size: 1.3rem; color: #9a9a9a;" />
       <div class="container">
         <div class="date-area">
-          <span class="mdi mdi-calendar-outline" />{{ t.startDate }}
+          <span class="mdi mdi-calendar-outline" />{{ props.startDate }}
           -
-          <span class="mdi mdi-calendar-outline" />{{ t.endDate }}
+          <span class="mdi mdi-calendar-outline" />{{ props.endDate }}
         </div>
-        <h4>{{ t.title }}</h4>
+        <h4>{{ props.title }}</h4>
       </div>
     </div>
   </div>
@@ -26,8 +26,7 @@ const tasks = [
 .list-container {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
-  margin-top: 2rem;
+  margin-top: 1rem;
 }
 
 .date-area {
@@ -36,7 +35,6 @@ const tasks = [
 }
 
 .task-card {
-  width: 20rem;
   max-width: 100%;
   min-height: 6rem;
   padding: 1rem;

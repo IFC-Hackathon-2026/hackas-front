@@ -2,7 +2,6 @@
 import { useAuthStore } from '@/stores/auth';
 import { useRouter } from 'vue-router';
 import AppButton from '@/components/forms/AppButton.vue';
-import TaskCard from '@/components/tasks/TaskCard.vue';
 
 const authStore = useAuthStore();
 const router = useRouter();
