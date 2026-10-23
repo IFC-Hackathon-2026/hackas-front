@@ -73,3 +73,8 @@ h1, h2, h3, h4, h5, h6 {
   --amarelo: #FFBE33;
   --verde: #429E5E;
 }
+
+html:has(.app-modal[open]),
+body:has(.app-modal[open]) {
+  overflow: hidden;
+}
