@@ -1,8 +1,54 @@
 <script setup>
 import { computed, reactive, ref } from 'vue'
 import { useUserStore } from '@/stores/userStore'
+import { useProjetoStore } from '@/stores/projetoStore'
+
+defineOptions({ name: 'ApiPlayground' })
 
 const userStore = useUserStore()
+const projetoStore = useProjetoStore()
+const projetoForm = reactive({ nome: '', descricao: '' })
+const projetoFiltros = reactive({ search: '', meus: true, page: 1 })
+const projetoId = ref('')
+const projetoPhoto = ref(null)
+
+async function listarProjetos() {
+  await run(() => projetoStore.getProjetos({
+    search: projetoFiltros.search,
+    meus: projetoFiltros.meus ? 'true' : 'false',
+    page: projetoFiltros.page,
+  }), 'Projetos carregados.')
+}
+
+async function consultarProjeto(id = projetoId.value) {
+  const projeto = await run(() => projetoStore.selecionarProjeto(id), 'Projeto carregado.')
+  if (projeto) {
+    projetoId.value = projeto.id
+    projetoForm.nome = projeto.nome
+    projetoForm.descricao = projeto.descricao
+  }
+}
+
+async function salvarProjeto(criar) {
+  await run(async () => {
+    const projeto = criar
+      ? await projetoStore.createProjeto(projetoForm)
+      : await projetoStore.updateProjeto(projetoStore.projetoAtual.id, projetoForm)
+    projetoId.value = projeto.id
+    return projeto
+  }, criar ? 'Projeto criado. Atualize a listagem para vê-lo.' : 'Projeto atualizado.')
+}
+
+async function excluirProjeto() {
+  const id = projetoStore.projetoAtual.id
+  if (!window.confirm(`Excluir o projeto ${id}? As tarefas vinculadas também serão excluídas.`)) return
+  await run(async () => {
+    await projetoStore.deleteProjeto(id)
+    projetoId.value = ''
+    projetoForm.nome = ''
+    projetoForm.descricao = ''
+  }, 'Projeto excluído.')
+}
 
 const loginForm = reactive({ email: '', password: '' })
 const registerForm = reactive({ name: '', email: '', password: '', foto: null })
@@ -116,6 +162,7 @@ function selectProfilePhoto(event) {
 
 function logout() {
   userStore.logout()
+  projetoStore.reset()
   selectedUser.value = null
   message.value = 'Sessão encerrada.'
   error.value = ''
@@ -127,7 +174,7 @@ function logout() {
     <header class="page-header">
       <div>
         <p class="eyebrow">Farol Flow</p>
-        <h1>Playground da API de usuário</h1>
+        <h1>Playground das APIs</h1>
         <p>Use esta página para testar cada endpoint sem depender das telas finais.</p>
       </div>
 
@@ -259,6 +306,75 @@ function logout() {
         <pre v-if="selectedUser">{{ JSON.stringify(selectedUser, null, 2) }}</pre>
       </section>
     </div>
+
+    <section class="spaced" aria-labelledby="projetos-title">
+      <h2 id="projetos-title">API de projetos</h2>
+      <p>Faça login acima para testar. Selecione um projeto para editar, enviar foto ou excluir.</p>
+      <fieldset class="grid project-controls" :disabled="loading || !userStore.isAuthenticated">
+        <section class="card card-wide">
+          <h3>1. Listagem e busca</h3>
+          <p><code>GET /projetos/?meus=true&amp;search=...</code></p>
+          <form @submit.prevent="listarProjetos">
+            <label>Buscar por nome ou descrição<input v-model="projetoFiltros.search" /></label>
+            <label class="checkbox-label"><input v-model="projetoFiltros.meus" type="checkbox" /> Somente meus projetos</label>
+            <label>Página<input v-model.number="projetoFiltros.page" type="number" min="1" required /></label>
+            <button>Listar projetos</button>
+          </form>
+          <p>Total: {{ projetoStore.total }} · Próxima página: {{ projetoStore.next ? 'Sim' : 'Não' }}</p>
+          <div class="table-wrapper">
+            <table>
+              <thead><tr><th>ID</th><th>Nome</th><th>Meu cargo</th><th>Participantes</th><th>Ação</th></tr></thead>
+              <tbody>
+                <tr v-for="projeto in projetoStore.projetos" :key="projeto.id">
+                  <td>{{ projeto.id }}</td><td>{{ projeto.nome }}</td>
+                  <td>{{ projeto.meu_cargo || 'Sem participação' }}</td>
+                  <td>{{ projeto.total_participantes }}</td>
+                  <td><button type="button" @click="consultarProjeto(projeto.id)">Selecionar</button></td>
+                </tr>
+                <tr v-if="!projetoStore.projetos.length"><td colspan="5">Nenhum projeto na listagem.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="card">
+          <h3>2. Consultar por ID</h3>
+          <p><code>GET /projetos/{id}/</code></p>
+          <form @submit.prevent="consultarProjeto()">
+            <label>ID<input v-model.number="projetoId" type="number" min="1" required /></label>
+            <button>Consultar e selecionar</button>
+          </form>
+          <h3 class="spaced">3. Criar ou editar</h3>
+          <p><code>POST /projetos/</code> · <code>PATCH /projetos/{id}/</code></p>
+          <form @submit.prevent="salvarProjeto(true)">
+            <label>Nome<input v-model="projetoForm.nome" maxlength="150" required /></label>
+            <label>Descrição<textarea v-model="projetoForm.descricao" rows="4"></textarea></label>
+            <button>Criar novo projeto</button>
+            <button type="button" :disabled="!projetoStore.podeEditar || !projetoForm.nome.trim()" @click="salvarProjeto(false)">Salvar no projeto selecionado</button>
+          </form>
+        </section>
+
+        <section class="card">
+          <h3>4. Projeto selecionado</h3>
+          <template v-if="projetoStore.projetoAtual">
+            <p>{{ projetoStore.projetoAtual.nome }} · ID {{ projetoStore.projetoAtual.id }}</p>
+            <p>Cargo: {{ projetoStore.meuCargo || 'Sem participação' }}</p>
+            <p>Pode editar: {{ projetoStore.podeEditar ? 'Sim' : 'Não' }} · Pode excluir: {{ projetoStore.podeExcluir ? 'Sim' : 'Não' }}</p>
+            <img v-if="projetoStore.projetoAtual.foto?.url" class="project-photo" :src="resolveMediaUrl(projetoStore.projetoAtual.foto.url)" alt="Foto do projeto" />
+            <div class="photo-update">
+              <label>Foto<input type="file" accept="image/png,image/jpeg" @change="projetoPhoto = $event.target.files?.[0] ?? null" /></label>
+              <button type="button" :disabled="!projetoStore.podeEditar || !projetoPhoto" @click="run(() => projetoStore.updatePhoto(projetoStore.projetoAtual.id, projetoPhoto), 'Foto do projeto atualizada.')">Enviar foto</button>
+              <button type="button" :disabled="!projetoStore.podeEditar" @click="run(() => projetoStore.updateProjeto(projetoStore.projetoAtual.id, { foto_attachment_key: null }), 'Foto removida do projeto.')">Remover foto</button>
+              <button type="button" class="danger" :disabled="!projetoStore.podeExcluir" @click="excluirProjeto">Excluir projeto selecionado</button>
+            </div>
+            <h4 class="spaced">Participantes</h4>
+            <ul><li v-for="participante in projetoStore.participantes" :key="participante.id">{{ participante.name }} — {{ participante.cargo }}</li></ul>
+            <pre>{{ JSON.stringify(projetoStore.projetoAtual, null, 2) }}</pre>
+          </template>
+          <p v-else>Nenhum projeto selecionado.</p>
+        </section>
+      </fieldset>
+    </section>
   </main>
 </template>
 
@@ -320,13 +436,18 @@ function logout() {
 form, .photo-update { display: grid; gap: 0.8rem; }
 .spaced, .photo-update { margin-top: 1rem; }
 label { display: grid; gap: 0.3rem; font-weight: 600; }
-input {
+input, textarea {
   width: 100%;
   padding: 0.7rem;
   border: 1px solid #aeb8c6;
   border-radius: 7px;
   background: white;
 }
+.project-controls { border: 0; padding: 0; margin: 1rem 0 0; min-width: 0; }
+.project-controls .card { min-width: 0; }
+.checkbox-label { display: flex; align-items: center; }
+.checkbox-label input { width: auto; }
+.project-photo { max-width: 100%; max-height: 180px; object-fit: contain; margin-top: 1rem; }
 
 button {
   padding: 0.7rem 1rem;
