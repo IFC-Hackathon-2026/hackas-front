@@ -16,7 +16,7 @@ const props = defineProps({
           -
           <span class="mdi mdi-calendar-outline" />{{ props.endDate }}
         </div>
-        <h4>{{ props.title }}</h4>
+        <h4 style="font-weight: 600;">{{ props.title }}</h4>
       </div>
     </div>
   </div>
