@@ -14,7 +14,7 @@ import AppInput from '../forms/AppInput.vue';
         <AppInput label="Buscar eventos" type="search" placeholder="Buscar evento..." icon="mdi-magnify" />
       </div>
 
-      <details class="category-filter" open>
+      <details class="category-filter">
         <summary>
           TODAS AS CATEGORIAS
           <span class="mdi mdi-chevron-down" aria-hidden="true"></span>
@@ -64,7 +64,7 @@ import AppInput from '../forms/AppInput.vue';
 
 <style scoped>
 .events-intro {
-  max-width: 90%;
+  max-width: 86%;
   margin: 0 auto;
   padding-block: clamp(2rem, 5vw, 4rem) 2rem;
   color: var(--azul-escuro, #001228);
