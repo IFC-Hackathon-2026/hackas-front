@@ -2,16 +2,22 @@
 
 <template>
   <section>
-    <div>
+    <div class="topo-container">
       <ul class="topo">
         <li class="blue">Quem somos</li>
-        <li class="destaque">MAIS DO QUE CAMPANHAS, COMPARTILHAMOS PROPÓSITOS (MUDAR)</li>
+        <li class="destaque">
+          MAIS DO QUE CAMPANHAS, COMPARTILHAMOS PROPÓSITOS (MUDAR)
+        </li>
         <li class="blue">
-          SOMOS UMA EMPRESA DEDICADA A OFERECER CAMPANHAS E EVENTOS INOVADORES E DE ALTA QUALIDADE,
-          COM FOCO NA SATISFAÇÃO E APRENDIZADO DE TODOS.
+          SOMOS UMA EMPRESA DEDICADA A OFERECER CAMPANHAS E EVENTOS
+          INOVADORES E DE ALTA QUALIDADE, COM FOCO NA SATISFAÇÃO E
+          APRENDIZADO DE TODOS.
         </li>
       </ul>
-      <p><img src="/public/topo.jpg" alt="topo" /></p>
+
+      <p class="topo-imagem">
+        <img src="/topo.jpg" alt="Topo" />
+      </p>
     </div>
 
     <h1>DESENVOLVEDORES</h1>
@@ -25,24 +31,28 @@
         <span class="mdi mdi-gmail"></span>
         <span class="mdi mdi-github"></span>
       </li>
+
       <li>
         <p><img src="" alt="" /></p>
         <p class="nomes">Kauan dos Santos Luciano</p>
         <span class="mdi mdi-gmail"></span>
         <span class="mdi mdi-github"></span>
       </li>
+
       <li>
         <p><img src="" alt="" /></p>
         <p class="nomes">Laura Eloysa Da Silva</p>
         <span class="mdi mdi-gmail"></span>
         <span class="mdi mdi-github"></span>
       </li>
+
       <li>
         <p><img src="" alt="" /></p>
         <p class="nomes">Maria Aparecida Dos Santos Costa</p>
         <span class="mdi mdi-gmail"></span>
         <span class="mdi mdi-github"></span>
       </li>
+
       <li>
         <p><img src="" alt="" /></p>
         <p class="nomes">Pedro Gabriel Gonçalves</p>
@@ -51,36 +61,46 @@
       </li>
     </ul>
   </section>
-  
-  <section>
-    <ul class="history">
-      <li><img src="/public/topo.jpg" alt="topo" /></li>
-      <li class="history">
-        <h1 class="history">Nossa História</h1>
-        <p class="history">
-            SOMOS UMA EMPRESA DEDICADA A OFERECER SOLUÇÕES INOVADORAS E DE ALTA QUALIDADE, COM FOCO NA SATISFAÇÃO OS NOSSOS CLIENTES.SOMOS UMA EMPRESA DEDICADA A OFERECER SOLUÇÕES INOVADORAS E DE ALTA QUALIDADE, COM FOCO NA SATISFAÇÃO OS NOSSOS CLIENTES.
+
+  <!-- Nossa História -->
+  <section class="secao-history">
+    <div class="history">
+      <div class="history-imagens">
+        <img src="/sobre-nos-1.jpg" alt="Nossa história - imagem 1" class="foto1" />
+        <img src="/sobre-nos-2.jpg" alt="Nossa história - imagem 2" class="foto2" />
+      </div>
+
+      <div class="history-texto">
+        <h1>Nossa História</h1>
+
+        <p>
+          SOMOS UMA EMPRESA DEDICADA A OFERECER SOLUÇÕES INOVADORAS
+          E DE ALTA QUALIDADE, COM FOCO NA SATISFAÇÃO DOS NOSSOS
+          CLIENTES. SOMOS UMA EMPRESA DEDICADA A OFERECER SOLUÇÕES
+          INOVADORAS E DE ALTA QUALIDADE, COM FOCO NA SATISFAÇÃO
+          DOS NOSSOS CLIENTES.
         </p>
-      </li>
-    </ul>
+      </div>
+    </div>
   </section>
 </template>
 
 <style scoped>
-div {
+.topo-container {
   display: flex;
   justify-content: space-around;
   align-items: center;
-  gap: 300px;
+  gap: 40px;
   padding: 0 10%;
 }
 
-div > p {
+.topo-imagem {
   width: 45%;
   margin: 0;
   flex-shrink: 0;
 }
 
-div > p img {
+.topo-imagem img {
   width: 100%;
   height: auto;
   object-fit: cover;
@@ -90,19 +110,6 @@ ul.topo {
   width: 45%;
   max-width: 500px;
   margin: 0;
-  padding: 0;
-  list-style: none;
-}
-p {
-  margin: 0;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
-
-ul.topo {
-  max-width: 30%;
-  margin: 0 auto;
   padding: 0;
   list-style: none;
 }
@@ -122,18 +129,11 @@ li.blue {
   color: #01295f;
   font-size: 1.3rem;
 }
-
-img {
-  width: 100%;
-  height: 100%;
-}
-
 h1 {
   text-align: center;
   color: #141414;
   margin-top: 4rem;
 }
-
 ul.devs {
   display: flex;
   justify-content: center;
@@ -141,8 +141,7 @@ ul.devs {
   width: 80%;
   list-style: none;
   padding: 0;
-  margin: 0 auto;
-  margin-top: 4rem;
+  margin: 4rem auto 0;
 }
 
 ul.devs li {
@@ -157,21 +156,69 @@ ul.devs li {
   width: fit-content;
   margin: 0 auto;
 }
-ul.history {
+.secao-history {
+  width: 100%;
+  margin: 5vw 0 7vw;
+}
+
+.history {
   display: flex;
-  justify-content: space-around;
+  justify-content: space-evenly;
   align-items: center;
-  margin: 5vw 0 7vw 0;
+  gap: 5%;
+  width: 90%;
+  margin: 0 auto;
 }
-li.history {
-  width: 25%;
+.history-imagens {
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 15px;
+  width: 45%;
+  padding: 0;
 }
-h1.history {
-   text-align: left;
-  margin: 2rem auto 0;
-  color: #01295F;
+
+.history-imagens img {
+  display: block;
+  object-fit: cover;
+  border-radius: 3px;
 }
-p.history {
-  font-size: 1.2rem;
+
+.history-imagens .foto1 {
+  width: 40%;
+  height: 160px;
+  margin-top: 0;
+}
+
+.history-imagens .foto2 {
+  width: 35%;
+  height: 155px;
+  margin-top: 60px;
+}
+
+
+.history-texto {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 15px;
+  width: 40%;
+  padding: 0;
+}
+
+.history-texto h1 {
+  text-align: left;
+  color: #01295f;
+  margin: 0;
+  font-size: 1.6rem;
+}
+
+.history-texto p {
+  display: block;
+  color: #141414;
+  font-size: 1rem;
+  line-height: 1.3;
+  margin: 0;
+  width: 70%;
 }
 </style>
