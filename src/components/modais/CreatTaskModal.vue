@@ -1,6 +1,6 @@
 <script setup>
 import { onMounted, onUnmounted, computed, ref } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { useRoute } from 'vue-router'
 import { useTaskStore } from '@/stores/taskStore'
 import { useUserStore } from '@/stores/userStore'
 import { UseCategoryStore } from '@/stores/categoryStore'
@@ -11,7 +11,7 @@ const taskStore = useTaskStore();
 const userStore = useUserStore();
 const categoryStore = UseCategoryStore();
 const route = useRoute();
-const router = useRouter();
+// const router = useRouter();
 
 const emits = defineEmits(['close']);
 const isEditMode = computed(() => !!route.params.id);
@@ -71,9 +71,9 @@ onMounted(async () => {
   userStore.getAllUsers()
   categoryStore.getCategories()
 
-  if (isEditMode.value) { 
+  if (isEditMode.value) {
     await taskStore.getTask(route.params.id)
-    
+
     if (taskStore.task.category && typeof taskStore.task.category[0] === 'object') {
       taskStore.task.category = taskStore.task.category.map(c => c.id);
     }
@@ -132,7 +132,7 @@ onUnmounted(() => {
             :style="taskStore.task.category.includes(c.id) ? categoryStore.getCategoryActive(c.id).activeStyle : ''"
           >
             <p style="font-size: 0.9rem">
-              <span :class="categoryStore.getCategoryActive(c.id)?.icon"></span> 
+              <span :class="categoryStore.getCategoryActive(c.id)?.icon"></span>
               {{ c.name }}
             </p>
           </div>
@@ -186,10 +186,10 @@ onUnmounted(() => {
           </label>
         </div>
 
-        <AppButton type="submit" :disabled="isFormUnchanged"> 
-          {{ isEditMode ? 'Salvar Alterações' : 'Adicionar' }} 
+        <AppButton type="submit" :disabled="isFormUnchanged">
+          {{ isEditMode ? 'Salvar Alterações' : 'Adicionar' }}
         </AppButton>
-        
+
         <AppButton v-if="isEditMode" @click="deleteTask()" type="button" variant="danger" style="margin-top: 0.5rem;">
           APAGAR
         </AppButton>
@@ -486,7 +486,7 @@ input:checked + .slider::before {
   position: absolute;
 
   bottom: auto;
-  
+
   transform: translate(-50%, -50%);
   left: 50%;
   top: 50%;

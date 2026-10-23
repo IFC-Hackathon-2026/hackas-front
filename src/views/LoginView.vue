@@ -2,8 +2,8 @@
 import { ref } from 'vue';
 import { useRouter, RouterLink } from 'vue-router';
 import { useAuthStore } from '@/stores/auth';
-import AppInput from '@/components/AppInput.vue';
-import AppButton from '@/components/AppButton.vue';
+import AppInput from '@/components/forms/AppInput.vue';
+import AppButton from '@/components/forms/AppButton.vue';
 
 const authStore = useAuthStore();
 const router = useRouter();
