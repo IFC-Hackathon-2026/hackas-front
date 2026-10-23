@@ -24,9 +24,15 @@ body {
   font-family: 'Poppins', sans-serif;
   background-color: var(--fundo-claro);
   color: var(--azul-escuro);
+  margin: 0;
   line-height: 1.5;
   /* 5. Improve text rendering */
   -webkit-font-smoothing: antialiased;
+}
+
+ul{
+  list-style: none;
+  padding-inline-start: 0;
 }
 
 /* 6. Improve media defaults */
