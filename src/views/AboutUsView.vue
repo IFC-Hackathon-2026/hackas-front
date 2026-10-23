@@ -28,46 +28,119 @@
       <li>
         <p><img src="" alt="" /></p>
         <p class="nomes">Carlos Henrique Pereira Santos</p>
-        <span class="mdi mdi-gmail"></span>
+        <a href="https://mail.google.com/mail/?view=cm&fs=1&to=ifcarloshenrique@email.com" 
+        target="_blank"
+        rel="noopener noreferrer"
+        class="link-icon"
+        >
+           <span class="mdi mdi-gmail"></span>
+        </a>
+
+        <a 
+        href="https://github.com/carloshenriqueok"
+        target="_blank"
+        rel="noopener noreferrer"
+        class="link-icon"
+        >
         <span class="mdi mdi-github"></span>
+        </a>
+       
       </li>
 
-      <li>
+       <li>
         <p><img src="" alt="" /></p>
         <p class="nomes">Kauan dos Santos Luciano</p>
-        <span class="mdi mdi-gmail"></span>
+        <a href="https://mail.google.com/mail/?view=cm&fs=1&to=kauanlucianoinfo3ifc@email.com" 
+        target="_blank"
+        rel="noopener noreferrer"
+        class="link-icon"
+        >
+           <span class="mdi mdi-gmail"></span>
+        </a>
+
+        <a 
+        href="https://github.com/diakauankl"
+        target="_blank"
+        rel="noopener noreferrer"
+        class="link-icon"
+        >
         <span class="mdi mdi-github"></span>
+        </a>
+       
+      </li>
+
+     <li>
+        <p><img src="" alt="" /></p>
+        <p class="nomes">Laura Eloysa da Silva</p>
+        <a href="https://mail.google.com/mail/?view=cm&fs=1&to=lauraeloysad@gmail.com" 
+        target="_blank"
+        rel="noopener noreferrer"
+        class="link-icon"
+        >
+           <span class="mdi mdi-gmail"></span>
+        </a>
+
+        <a 
+        href="https://github.com/LauraEloysa"
+        target="_blank"
+        rel="noopener noreferrer"
+        class="link-icon"
+        >
+        <span class="mdi mdi-github"></span>
+        </a>
+       
       </li>
 
       <li>
         <p><img src="" alt="" /></p>
-        <p class="nomes">Laura Eloysa Da Silva</p>
-        <span class="mdi mdi-gmail"></span>
-        <span class="mdi mdi-github"></span>
-      </li>
+        <p class="nomes">Maria Aparecida dos Santos Costa</p>
+        <a href="https://mail.google.com/mail/?view=cm&fs=1&to=mariaaparecida.ifc.araquari@gmail.com" 
+        target="_blank"
+        rel="noopener noreferrer"
+        class="link-icon"
+        >
+           <span class="mdi mdi-gmail"></span>
+        </a>
 
-      <li>
-        <p><img src="" alt="" /></p>
-        <p class="nomes">Maria Aparecida Dos Santos Costa</p>
-        <span class="mdi mdi-gmail"></span>
+        <a 
+        href="https://github.com/mariisbx"
+        target="_blank"
+        rel="noopener noreferrer"
+        class="link-icon"
+        >
         <span class="mdi mdi-github"></span>
+        </a>
+       
       </li>
-
       <li>
         <p><img src="" alt="" /></p>
         <p class="nomes">Pedro Gabriel Gonçalves</p>
-        <span class="mdi mdi-gmail"></span>
+        <a href="https://mail.google.com/mail/?view=cm&fs=1&to=pedrogabrielgoncalves91@gmail.com" 
+        target="_blank"
+        rel="noopener noreferrer"
+        class="link-icon"
+        >
+           <span class="mdi mdi-gmail"></span>
+        </a>
+
+        <a 
+        href="https://github.com/PedGabriel"
+        target="_blank"
+        rel="noopener noreferrer"
+        class="link-icon"
+        >
         <span class="mdi mdi-github"></span>
+        </a>
+       
       </li>
     </ul>
   </section>
 
-  <!-- Nossa História -->
   <section class="secao-history">
     <div class="history">
       <div class="history-imagens">
-        <img src="/sobre-nos-1.jpg" alt="Nossa história - imagem 1" class="foto1" />
-        <img src="/sobre-nos-2.jpg" alt="Nossa história - imagem 2" class="foto2" />
+        <img src="/sobre-nos-1.jpg" alt="" class="foto1" />
+        <img src="/sobre-nos-2.jpg" alt="" class="foto2" />
       </div>
 
       <div class="history-texto">
@@ -220,5 +293,9 @@ ul.devs li {
   line-height: 1.3;
   margin: 0;
   width: 70%;
+}
+span.mdi {
+  font-size: 1.5rem;
+  color: #141414;
 }
 </style>
