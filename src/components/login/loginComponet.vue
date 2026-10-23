@@ -18,7 +18,7 @@ async function login() {
   erroMessage.value = '';
   try {
     await authStore.login(email.value, password.value);
-    await router.replace({ name: 'home' });
+    await router.replace({ name: 'eventos' });
   } catch {
     erroMessage.value = 'Não foi possível entrar. Confira seus dados e tente novamente.';
   } finally {
