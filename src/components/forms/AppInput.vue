@@ -59,10 +59,15 @@ const value = computed({
     margin-bottom: 4vw;
 }
 
-.label-class{
+.label-class {
     display: block;
     margin-bottom: 10px;
     font-weight: 500;
+    transition: color .3s ease;
+}
+
+.app-input:focus-within .label-class {
+    color: var(--primaria, #00265c);
 }
 
 .input-class {
@@ -73,21 +78,17 @@ const value = computed({
     width: 100%;
     border-radius: 5px;
     font-family: 'Poppins';
-    transition: all .3s;
+    transition: border-color .3s ease, box-shadow .3s ease;
+}
+
+.input-class:hover {
+    border-color: #5b7399;
 }
 
 .input-class:focus {
     outline: none;
-    border: 2px solid #171717 ;
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
-}
-
-.input-wrapper {
-    position: relative;
-}
-
-.input-class--password {
-    padding-right: 3rem;
+    border-color: var(--primaria, #00265c);
+    box-shadow: 0 0 0 4px rgba(0, 38, 92, 0.12);
 }
 
 .password-toggle {
@@ -105,14 +106,15 @@ const value = computed({
     background: transparent;
     color: #525252;
     cursor: pointer;
+    transition: color .3s ease;
 }
 
 .password-toggle:hover {
-    color: #171717;
+    color: var(--primaria, #00265c);
 }
 
 .password-toggle:focus-visible {
-    outline: 2px solid #171717;
+    outline: 2px solid var(--primaria, #00265c);
     outline-offset: -4px;
 }
 

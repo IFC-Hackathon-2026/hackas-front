@@ -13,6 +13,7 @@ function logout() {
 </script>
 
 <template>
+  
   <h1>Hackathon 2026 - Home Page</h1>
   <p>Logado: {{ authStore.isAuthenticated }}</p>
   <AppButton @click="logout" variant="secondary">Logout</AppButton>

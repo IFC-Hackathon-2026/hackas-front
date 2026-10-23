@@ -1,16 +1,18 @@
 <script setup>
+import { RouterView, useRoute } from 'vue-router';
 import AppFooterComponent from './components/layout/AppFooterComponent.vue';
 import AppHeaderComponent from './components/layout/appHeaderComponent.vue';
 
+const route = useRoute();
 </script>
 
 <template>
   <div class="app-layout">
-    <AppHeaderComponent />
+    <AppHeaderComponent v-if="!route.meta.hideHeader" />
     <main class="app-content">
-      <RouterView />
+      <RouterView :class="{ 'no-header': route.meta.hideHeader }" />
     </main>
-    <AppFooterComponent />
+    <AppFooterComponent v-if="!route.meta.hideFooter" />
   </div>
 </template>
 
@@ -28,6 +30,10 @@ import AppHeaderComponent from './components/layout/appHeaderComponent.vue';
   padding-inline: var(--page-padding);
 }
 
+
+.no-header {
+  margin-top: 0;
+}
 @media (max-width: 760px) {
   .app-layout {
     --page-padding: 1.25rem;

@@ -15,7 +15,7 @@ const router = createRouter({
       path: '/login',
       name: 'login',
       component: () => import('../views/LoginView.vue'),
-      meta: { guestOnly: true },
+      meta: { guestOnly: true, hideHeader: true, hideFooter: true },
     },
     {
       path: '/cadastro',
