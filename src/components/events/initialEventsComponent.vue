@@ -1,63 +1,165 @@
+
 <script setup>
+import { ref, computed, onMounted, watch } from 'vue';
 import AppInput from '../forms/AppInput.vue';
+import categoriasApi from '@/api/categoriasApi';
+
+// EVENTOS ENVIADOS PARA A PÁGINA PAI
+const emit = defineEmits([
+  'buscar-eventos',
+  'filtrar-categorias'
+]);
+
+// ESTADOS
+const buscaEvento = ref('');
+const buscaCategoria = ref('');
+const categorias = ref([]);
+const categoriasSelecionadas = ref([]);
+const carregando = ref(false);
+const erro = ref('');
+
+// BUSCAR CATEGORIAS NO BACKEND
+async function buscarCategorias() {
+  carregando.value = true;
+  erro.value = '';
+
+  try {
+    // REQUISIÇÃO GET UTILIZANDO AXIOS
+    const response = await categoriasApi.listar();
+
+    const dados = Array.isArray(response.data)
+      ? response.data
+      : response.data?.results ?? [];
+
+    categorias.value = dados;
+
+    console.log('Categorias carregadas:', categorias.value);
+
+  } catch (error) {
+    console.error('Erro ao buscar categorias:', error);
+
+    erro.value = 'Não foi possível carregar as categorias.';
+    categorias.value = [];
+
+  } finally {
+    carregando.value = false;
+  }
+}
+
+// FILTRAR CATEGORIAS PELA PESQUISA
+const categoriasFiltradas = computed(() => {
+  const texto = buscaCategoria.value.toLowerCase().trim();
+
+  if (!texto) {
+    return categorias.value;
+  }
+
+  return categorias.value.filter((categoria) =>
+    String(categoria.nome ?? '')
+      .toLowerCase()
+      .includes(texto)
+  );
+});
+
+// ENVIAR PESQUISA DE EVENTOS PARA A PÁGINA PAI
+watch(buscaEvento, (novoValor) => {
+  emit('buscar-eventos', novoValor);
+});
+
+// ENVIAR CATEGORIAS SELECIONADAS PARA A PÁGINA PAI
+watch(categoriasSelecionadas, (novasCategorias) => {
+  emit('filtrar-categorias', [...novasCategorias]);
+});
+
+// CARREGAR CATEGORIAS QUANDO O COMPONENTE ABRIR
+onMounted(buscarCategorias);
 </script>
 
 <template>
-  <section class="events-intro" aria-labelledby="events-title">
+  <section
+    class="events-intro"
+    aria-labelledby="events-title"
+  >
     <div class="title">
       <h1 id="events-title">EXPLORE EVENTOS.</h1>
       <p>ENCONTRE TUDO O QUE PRECISA DE FORMA RÁPIDA.</p>
     </div>
 
     <div class="search-toolbar">
+
+      <!-- BUSCAR EVENTOS -->
       <div class="search">
-        <AppInput label="Buscar eventos" type="search" placeholder="Buscar evento..." icon="mdi-magnify" />
+        <AppInput
+          v-model="buscaEvento"
+          label="Buscar eventos"
+          type="search"
+          placeholder="Buscar evento..."
+          icon="mdi-magnify"
+        />
       </div>
 
+      <!-- FILTRO DE CATEGORIAS -->
       <details class="category-filter">
         <summary>
           TODAS AS CATEGORIAS
-          <span class="mdi mdi-chevron-down" aria-hidden="true"></span>
+          <span
+            class="mdi mdi-chevron-down"
+            aria-hidden="true"
+          ></span>
         </summary>
 
         <div class="filter-panel">
-          <AppInput label="Buscar categorias" type="search" placeholder="Buscar..." icon="mdi-magnify" />
 
-<!-- filtro ta como exemplo, tem que puxar as categorias do back -->
- 
-          <fieldset>
-            <legend class="visually-hidden">Categorias de eventos</legend>
-            <label class="category-option category-option--group">
-              <input type="checkbox" />
-              <span>Educacionais e Profissionais</span>
+          <!-- BUSCAR CATEGORIAS -->
+          <AppInput
+            v-model="buscaCategoria"
+            label="Buscar categorias"
+            type="search"
+            placeholder="Buscar categorias..."
+            icon="mdi-magnify"
+          />
+
+          <!-- CARREGAMENTO -->
+          <p v-if="carregando">
+            Carregando categorias...
+          </p>
+
+          <!-- ERRO -->
+          <p v-else-if="erro">
+            {{ erro }}
+          </p>
+
+          <!-- LISTA DE CATEGORIAS -->
+          <fieldset v-else>
+            <legend class="visually-hidden">
+              Categorias de eventos
+            </legend>
+
+            <label
+              v-for="categoria in categoriasFiltradas"
+              :key="categoria.id"
+              class="category-option"
+            >
+              <input
+                v-model="categoriasSelecionadas"
+                type="checkbox"
+                :value="categoria.id"
+              />
+
+              <span>
+                {{ categoria.nome }}
+              </span>
             </label>
-            <div class="category-children">
-              <label class="category-option">
-                <input type="checkbox" />
-                <span>Acadêmicos</span>
-              </label>
-              <label class="category-option">
-                <input type="checkbox" />
-                <span>Workshops</span>
-              </label>
-              <label class="category-option">
-                <input type="checkbox" />
-                <span>Palestras</span>
-              </label>
-            </div>
-            <label class="category-option category-option--group">
-              <input type="checkbox" />
-              <span>Culturais</span>
-            </label>
-            <label class="category-option category-option--group">
-              <input type="checkbox" />
-              <span>Esportivos</span>
-            </label>
+
+            <!-- NENHUMA CATEGORIA -->
+            <p v-if="categoriasFiltradas.length === 0">
+              Nenhuma categoria encontrada.
+            </p>
           </fieldset>
-
 
         </div>
       </details>
+
     </div>
   </section>
 </template>

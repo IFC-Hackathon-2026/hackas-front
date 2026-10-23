@@ -1,48 +1,46 @@
 <script setup>
-import AppButton from '../forms/AppButton.vue';
+import { ref, onMounted, computed } from 'vue'
+import AppButton from '../forms/AppButton.vue'
+import projetosApi from '@/api/projetosApi'
+import { useRouter } from 'vue-router';
 
-// deixar igual no back e no Fron, o nome das categorias
 const estilos = {
   academicos: {
     cor: '#2767AA',
-    cientificos: { icone: 'mdi-flask',},
-    tecnologicos: { icone: 'mdi-laptop',},
-    educacionais: { icone: 'mdi-school'},
-    institucionais: { icone: 'mdi-domain',},
-    corporativos:{ icone: 'mdi-briefcase-account-outline', },
+    cientificos: { icone: 'mdi-flask' },
+    tecnologicos: { icone: 'mdi-laptop' },
+    educacionais: { icone: 'mdi-school' },
+    institucionais: { icone: 'mdi-domain' },
+    corporativos: { icone: 'mdi-briefcase-account-outline' },
   },
-
 
   culEartistico: {
-    cor: ' #C795E5',
-    culturais: { icone: 'mdi-drama-masks', },
-    artisticos: { icone: 'mdi-palette-outline', },
-    gastronomicos: { icone: 'mdi-silverware-clean', },
+    cor: '#C795E5',
+    culturais: { icone: 'mdi-drama-masks' },
+    artisticos: { icone: 'mdi-palette-outline' },
+    gastronomicos: { icone: 'mdi-silverware-clean' },
   },
 
-  
-  esportEcompet:{
+  esportEcompet: {
     cor: '#EFAA73',
-    esportivos: { icone: 'mdi-soccer', },
-    competitivos: { icone: 'mdi-trophy', },
+    esportivos: { icone: 'mdi-soccer' },
+    competitivos: { icone: 'mdi-trophy' },
   },
 
-  sociaisErecreat:{
+  sociaisErecreat: {
     cor: '#E995B7',
-    sociais: { icone: 'mdi-account-multiple', },
-    recreativos: { icone: 'mdi-party-popper', },
-    comunitarios: { icone: 'mdi-handshake-outline', },
+    sociais: { icone: 'mdi-account-multiple' },
+    recreativos: { icone: 'mdi-party-popper' },
+    comunitarios: { icone: 'mdi-handshake-outline' },
   },
 
-  politicosErelig:{
+  politicosErelig: {
     cor: '#DFC46D',
-    politicos: { icone: 'mdi-gavel', },
-    diplomaticos: { icone: 'mdi-earth', },
-    religiosos: { icone: 'mdi-hands-pray', },
-  }
-
+    politicos: { icone: 'mdi-gavel' },
+    diplomaticos: { icone: 'mdi-earth' },
+    religiosos: { icone: 'mdi-hands-pray' },
+  },
 }
-
 
 const nomesCategorias = {
   cientificos: 'Científico',
@@ -63,39 +61,215 @@ const nomesCategorias = {
   religiosos: 'Religioso',
 }
 
-const categorias = Object.values(estilos).flatMap(({ cor, ...subcategorias }) =>
-  Object.entries(subcategorias).map(([chave, { icone }]) => ({
-    nome: nomesCategorias[chave],
-    cor: cor.trim(),
-    icone,
-  })),
+const router = useRouter();
+
+function abrirDetalhes(projeto) {
+  if (projeto.id == null) return;
+
+  router.push({
+    name: 'projeto-detalhes',
+    params: { id: projeto.id }
+  });
+}
+
+const props = defineProps({
+  busca: {
+    type: String,
+    default: '',
+  },
+  categoriasSelecionadas: {
+    type: Array,
+    default: () => [],
+  },
+})
+
+const emit = defineEmits(['ver-detalhes'])
+
+const API_ORIGIN = (import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8000/api').replace(
+  /\/api\/?$/,
+  '',
 )
 
-// Categoria de exemplo, sorteada uma vez ao montar o componente.
-const categoria = categorias[Math.floor(Math.random() * categorias.length)]
-const emit = defineEmits(['ver-detalhes'])
+const projetos = ref([])
+const carregando = ref(false)
+const erro = ref('')
+
+function obterUrlImagem(valor) {
+  if (!valor) return ''
+
+  if (typeof valor === 'string') {
+    if (/^https?:\/\//i.test(valor)) return valor
+    if (valor.startsWith('/')) return `${API_ORIGIN}${valor}`
+    return valor
+  }
+
+  if (typeof valor === 'object') {
+    return obterUrlImagem(valor.url ?? valor.src ?? valor.file ?? valor.path ?? '')
+  }
+
+  return ''
+}
+
+function obterUrlImagemDoProjeto(projeto) {
+  const foto = projeto?.foto
+  const fotoUrl = projeto?.foto_url
+
+  if (typeof foto === 'string') return obterUrlImagem(foto)
+  if (foto && typeof foto === 'object') return obterUrlImagem(foto.url)
+  if (fotoUrl) return obterUrlImagem(fotoUrl)
+
+  return ''
+}
+
+async function buscarProjetos() {
+  carregando.value = true
+  erro.value = ''
+
+  try {
+    const response = await projetosApi.listar()
+
+    const dados = Array.isArray(response.data) ? response.data : (response.data?.results ?? [])
+
+    projetos.value = dados
+
+    console.log('Projetos carregados:', projetos.value)
+    console.log('Primeiro projeto:', projetos.value[0])
+    console.log('Foto:', projetos.value[0]?.foto)
+    console.log('Foto URL:', projetos.value[0]?.foto_url)
+
+    projetos.value.forEach((projeto) => {
+      console.log(`Projeto ${projeto.id} - Foto:`, projeto.foto)
+
+      console.log(`Projeto ${projeto.id} - Foto URL:`, projeto.foto_url)
+    })
+  } catch (error) {
+    console.error('Erro ao buscar projetos:', error)
+
+    erro.value = 'Não foi possível carregar os projetos.'
+    projetos.value = []
+  } finally {
+    carregando.value = false
+  }
+}
+
+const projetosFiltrados = computed(() => {
+  const texto = props.busca.toLowerCase().trim()
+
+  return projetos.value.filter((projeto) => {
+    const nomeProjeto = String(projeto.nome ?? projeto.titulo ?? '').toLowerCase()
+
+    const correspondeBusca = nomeProjeto.includes(texto)
+
+    const categoriaId = projeto.categoria_id ?? projeto.categoria?.id ?? projeto.categoria
+
+    const correspondeCategoria =
+      props.categoriasSelecionadas.length === 0 ||
+      props.categoriasSelecionadas.some((id) => String(id) === String(categoriaId))
+
+    return correspondeBusca && correspondeCategoria
+  })
+})
+
+function normalizarNome(nome) {
+  return String(nome ?? '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z]/g, '')
+}
+
+function obterEstiloCategoria(nome) {
+  const chave = normalizarNome(nome)
+
+  for (const grupo of Object.values(estilos)) {
+    for (const [categoriaChave, configuracao] of Object.entries(grupo)) {
+      if (categoriaChave === 'cor') continue
+
+      const nomeExibicao = nomesCategorias[categoriaChave]
+
+      if (normalizarNome(categoriaChave) === chave || normalizarNome(nomeExibicao) === chave) {
+        return {
+          cor: grupo.cor.trim(),
+          icone: configuracao.icone,
+        }
+      }
+    }
+  }
+
+  return {
+    cor: '#2767AA',
+    icone: 'mdi-calendar',
+  }
+}
+
+function obterNomeCategoria(projeto) {
+  if (typeof projeto.categoria === 'object' && projeto.categoria !== null) {
+    return projeto.categoria.nome ?? 'Sem categoria'
+  }
+
+  return (
+    projeto.categoria_nome ??
+    (typeof projeto.categoria === 'string' ? projeto.categoria : 'Sem categoria')
+  )
+}
+
+function obterNomeProjeto(projeto) {
+  return projeto.nome ?? projeto.titulo ?? 'Projeto sem título'
+}
+
+onMounted(buscarProjetos)
 </script>
 
 <template>
   <section class="event-list" aria-label="Eventos">
-    <ul>
-      <li>
-        <article class="event-card">
-          <div class="event-image" aria-hidden="true"></div>
-          <div class="event-content">
+    <p v-if="carregando">Carregando projetos...</p>
 
-            <!-- MUDAR ISSO COM O BACK -->
-            <span class="event-category" :style="{ backgroundColor: categoria.cor }">
-              <span :class="['mdi', categoria.icone]" aria-hidden="true"></span>
-              {{ categoria.nome }}
-            </span>
+    <p v-else-if="erro">
+      {{ erro }}
+    </p>
 
-            <h2>Título</h2>
-           <AppButton> Ver Detalhes <span class="mdi mdi-arrow-right"></span> </AppButton>
-          </div>
-        </article>
-      </li>
-    </ul>
+    <template v-else>
+      <ul>
+        <li v-for="projeto in projetosFiltrados" :key="projeto.id">
+          <article class="event-card">
+            <div class="event-image">
+              <img
+                v-if="obterUrlImagemDoProjeto(projeto)"
+                :src="obterUrlImagemDoProjeto(projeto)"
+                :alt="obterNomeProjeto(projeto)"
+                class="event-photo"
+              />
+            </div>
+
+            <div class="event-content">
+
+              <span
+                class="event-category"
+                :style="{
+                  backgroundColor: obterEstiloCategoria(obterNomeCategoria(projeto)).cor,
+                }"
+              >
+                <span
+                  :class="['mdi', obterEstiloCategoria(obterNomeCategoria(projeto)).icone]"
+                  aria-hidden="true"
+                ></span>
+
+                {{ obterNomeCategoria(projeto) }}
+              </span>
+
+              <h2>{{ obterNomeProjeto(projeto) }}</h2>
+
+             <AppButton @click="abrirDetalhes(projeto)">
+                Ver Detalhes
+                <span class="mdi mdi-arrow-right"></span>
+              </AppButton>
+            </div>
+          </article>
+        </li>
+      </ul>
+
+      <p v-if="projetosFiltrados.length === 0">Nenhum projeto encontrado.</p>
+    </template>
   </section>
 </template>
 
@@ -109,6 +283,8 @@ const emit = defineEmits(['ver-detalhes'])
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 24px;
+  padding: 0;
+  list-style: none;
 }
 
 .event-list > ul > li {
@@ -126,6 +302,13 @@ const emit = defineEmits(['ver-detalhes'])
 .event-image {
   aspect-ratio: 390 / 290;
   background: #e8e8e8;
+  overflow: hidden;
+}
+
+.event-photo {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 .event-content {
