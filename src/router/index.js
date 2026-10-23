@@ -23,6 +23,11 @@ const router = createRouter({
       component: () => import('../views/RegisterView.vue'),
       meta: { guestOnly: true },
     },
+    {
+      path: '/aboutus',
+      name: 'aboutus',
+      component: () => import('../views/AboutUsView.vue'),
+    }
   ],
 })
 
