@@ -23,45 +23,52 @@ defineProps({
 
 <style scoped>
 .app-button {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  min-height: 2.75rem;
-  padding: 0.625rem 1.25rem;
-  border: 1px solid transparent;
-  border-radius: 0.5rem;
-  font-weight: 600;
+  position: relative;
+  overflow: hidden;
+  z-index: 0;
+  width: 100%;
+  height: 50px;
+  background: transparent !important;
+  color: var(--primaria, #00265c) !important;
+  font-size: 1.25rem;
+  font-weight: 700;
+  border: 2px solid var(--primaria, #00265c) !important;
+  border-radius: 6px;
   cursor: pointer;
+  transition: color 0.4s ease;
 }
 
-.app-button--primary {
-  background: #171717;
-  color: #fff;
-  border-color: #171717;
-  transition: all .3s;
+.app-button::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: var(--primaria, #00265c);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 0.4s ease;
+  z-index: -1;
 }
 
-.app-button--primary:hover {
-  background: rgb(41, 39, 39);
-  border-color: rgb(41, 39, 39);
-  transition: all .3s;
+.app-button:hover:not(:disabled),
+.app-button:focus-visible:not(:disabled),
+.app-button:active:not(:disabled) {
+  color: #fff !important;
+  border-color: var(--primaria, #00265c) !important;
 }
 
-.app-button--secondary {
-  background: inherit;
-  color: #171717;
-  border: 2px solid #171717;
-  transition: all .3s;
+.app-button:hover:not(:disabled)::before,
+.app-button:focus-visible:not(:disabled)::before,
+.app-button:active:not(:disabled)::before {
+  transform: scaleX(1);
 }
 
-.app-button--secondary:hover {
-  background: #e2e1e1;
-  transition: all .3s;
+.app-button:focus-visible {
+  outline: 2px solid var(--primaria, #00265c);
+  outline-offset: 2px;
 }
 
 .app-button:disabled {
-  opacity: 0.5;
+  opacity: 0.7;
   cursor: not-allowed;
 }
 </style>
