@@ -1,8 +1,8 @@
 <script setup>
 import { RouterLink } from 'vue-router';
 import { useTemplateStore } from "@/store/template";
-import appButtonComponent from "@/components/form/appButton.vue";
-import { useAuthStore } from '@/store/authStore';
+import appButtonComponent from "@/components/forms/AppButton.vue";
+import { useAuthStore } from '@/stores/auth';
 
 const templateStore = useTemplateStore();
 const authStore = useAuthStore();

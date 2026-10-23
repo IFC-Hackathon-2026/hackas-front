@@ -1,6 +1,6 @@
 <script setup>
 import { computed, ref, watch } from "vue";
-import appInput from '@/components/form/appInput.vue'
+import appInput from '@/components/forms/AppInput.vue'
 
 const props = defineProps({
   currentPage: Number,

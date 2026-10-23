@@ -22,6 +22,8 @@
 body {
   /* 4. Increase line-height */
   font-family: 'Poppins', sans-serif;
+  background-color: var(--fundo-claro);
+  color: var(--azul-escuro);
   line-height: 1.5;
   /* 5. Improve text rendering */
   -webkit-font-smoothing: antialiased;
@@ -54,6 +56,12 @@ h1, h2, h3, h4, h5, h6 {
 /*
   10. Create a root stacking context
 */
-#root, #__next {
-  isolation: isolate;
+:root {
+  --primaria: #01295F;
+  --fundo-claro: #F6F6F2;
+  --azul-escuro: #001228;
+  --azul-claro: #2767AA;
+  --laranja: #E53D00;
+  --amarelo: #FFBE33;
+  --verde: #429E5E;
 }
