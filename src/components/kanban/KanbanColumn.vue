@@ -60,7 +60,8 @@ const props = defineProps({
 }
 
 .column-tasks {
-  height: 31rem;
+  flex: 1;
+  min-height: 0;
   overflow-y: auto;
   display: flex;
   flex-direction: column;
@@ -69,40 +70,30 @@ const props = defineProps({
   scrollbar-gutter: stable;
 }
 
-.column-tasks :deep(.list-container) {
-  margin-top: 0;
-  flex-shrink: 0;
-}
-
-.column-tasks :deep(.task-card) {
-  height: 7rem;
-  min-height: 7rem;
-}
-
-.column-tasks :deep(.container) {
-  min-width: 0;
-}
-
-.column-tasks :deep(h4) {
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
-  overflow: hidden;
-}
-
 .columns-list {
+    flex: 1;
+    min-height: 0;
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 1em;
 }
 
 .kanban-column{
+  min-height: 0;
   display: flex;
   flex-direction: column;
   min-width: 0;
   border: 2px solid;
   border-radius: 10px;
   padding: 1rem;
+}
+
+
+@media (max-width: 760px) {
+  .columns-list {
+    grid-template-columns: repeat(3, minmax(16rem, 1fr));
+    overflow-x: auto;
+  }
 }
 
 .column-header {

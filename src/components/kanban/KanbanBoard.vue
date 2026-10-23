@@ -37,5 +37,15 @@ const kabanCategories = computed(() =>
 <style scoped>
 .kanban-board {
   width: 100%;
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  height: 100dvh;
+  padding-block: 2rem;
+}
+
+.section-header {
+  margin-bottom: 1.2rem;
+  flex-shrink: 0;
 }
 </style>

@@ -17,7 +17,7 @@ import LogoDark from '/FarolFlow-logo-dark.svg'
       </div>
 
       <div>
-        <h4>Atendimento</h4>
+        <h4 style="color: var(--fundo-claro);">Atendimento</h4>
         <ul class="infos-list">
           <li>
             <span class="mdi mdi-clock-outline"></span>
@@ -30,7 +30,7 @@ import LogoDark from '/FarolFlow-logo-dark.svg'
       </div>
 
       <div>
-        <h4>Contato</h4>
+        <h4 style="color: var(--fundo-claro);">Contato</h4>
         <ul class="infos-list">
           <li>
             <span class="mdi mdi-phone"></span>
