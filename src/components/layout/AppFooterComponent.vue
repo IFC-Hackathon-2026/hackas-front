@@ -52,6 +52,7 @@ import LogoDark from '/FarolFlow-logo-dark.svg'
 
 <style scoped>
 .app-footer {
+  margin-top: 2rem;
   background-color: var(--primaria);
   flex-shrink: 0;
   color: var(--fundo-claro);
