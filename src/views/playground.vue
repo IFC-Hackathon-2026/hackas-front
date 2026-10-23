@@ -2,15 +2,133 @@
 import { computed, reactive, ref } from 'vue'
 import { useUserStore } from '@/stores/userStore'
 import { useProjetoStore } from '@/stores/projetoStore'
+import { useStatusStore } from '@/stores/statusStore'
+import { useCategoriaStore } from '@/stores/categoriaStore'
+import { useTarefaStore } from '@/stores/tarefaStore'
 
 defineOptions({ name: 'ApiPlayground' })
 
 const userStore = useUserStore()
 const projetoStore = useProjetoStore()
+const statusStore = useStatusStore()
+const categoriaStore = useCategoriaStore()
+const tarefaStore = useTarefaStore()
 const projetoForm = reactive({ nome: '', descricao: '' })
 const projetoFiltros = reactive({ search: '', meus: true, page: 1 })
 const projetoId = ref('')
 const projetoPhoto = ref(null)
+const statusForm = reactive({ nome: '', cor: '#808080', ordem: 1, finaliza_task: false })
+const categoriaForm = reactive({ nome: '', cor: '#808080' })
+const tarefaForm = reactive({
+  titulo: '', descricao: '', prioridade: 'media', status: '', prazo: '', categoria: [], responsavel: [],
+})
+const statusSelecionadoId = ref('')
+const categoriaSelecionadaId = ref('')
+const tarefaSelecionadaId = ref('')
+
+const projetoSelecionadoId = computed(() => projetoStore.projetoAtual?.id ?? null)
+
+async function carregarDadosProjeto() {
+  const id = projetoSelecionadoId.value
+  if (!id) throw new Error('Selecione um projeto primeiro.')
+  const resultado = await run(
+    () => Promise.all([
+      statusStore.getStatuses(id),
+      categoriaStore.getCategorias(id),
+      tarefaStore.getTarefas(id, { page_size: 100 }),
+    ]),
+    'Status, categorias e tarefas carregados.',
+  )
+  if (resultado && !tarefaForm.status) tarefaForm.status = statusStore.statusInicial?.id ?? ''
+}
+
+async function salvarStatus(criar) {
+  const id = projetoSelecionadoId.value
+  const status = await run(
+    () => criar
+      ? statusStore.createStatus(id, statusForm)
+      : statusStore.updateStatus(statusSelecionadoId.value, id, statusForm),
+    criar ? 'Status criado.' : 'Status atualizado.',
+  )
+  if (status) selecionarStatus(status)
+}
+
+function selecionarStatus(status) {
+  statusSelecionadoId.value = status.id
+  Object.assign(statusForm, status)
+}
+
+async function excluirStatus() {
+  await run(
+    () => statusStore.deleteStatus(statusSelecionadoId.value, projetoSelecionadoId.value),
+    'Status excluído.',
+  )
+  statusSelecionadoId.value = ''
+}
+
+async function salvarCategoria(criar) {
+  const id = projetoSelecionadoId.value
+  const categoria = await run(
+    () => criar
+      ? categoriaStore.createCategoria(id, categoriaForm)
+      : categoriaStore.updateCategoria(categoriaSelecionadaId.value, id, categoriaForm),
+    criar ? 'Categoria criada.' : 'Categoria atualizada.',
+  )
+  if (categoria) selecionarCategoria(categoria)
+}
+
+function selecionarCategoria(categoria) {
+  categoriaSelecionadaId.value = categoria.id
+  Object.assign(categoriaForm, categoria)
+}
+
+async function excluirCategoria() {
+  await run(
+    () => categoriaStore.deleteCategoria(categoriaSelecionadaId.value, projetoSelecionadoId.value),
+    'Categoria excluída.',
+  )
+  categoriaSelecionadaId.value = ''
+}
+
+function tarefaPayload() {
+  return {
+    ...tarefaForm,
+    status: tarefaForm.status || undefined,
+    prazo: tarefaForm.prazo ? new Date(tarefaForm.prazo).toISOString() : null,
+  }
+}
+
+async function salvarTarefa(criar) {
+  const projetoId = projetoSelecionadoId.value
+  const tarefa = await run(
+    () => criar
+      ? tarefaStore.createTarefa(projetoId, tarefaPayload())
+      : tarefaStore.updateTarefa(tarefaSelecionadaId.value, projetoId, tarefaPayload()),
+    criar ? 'Tarefa criada.' : 'Tarefa atualizada.',
+  )
+  if (tarefa) selecionarTarefa(tarefa)
+}
+
+function selecionarTarefa(tarefa) {
+  tarefaSelecionadaId.value = tarefa.id
+  Object.assign(tarefaForm, {
+    titulo: tarefa.titulo ?? '',
+    descricao: tarefa.descricao ?? '',
+    prioridade: tarefa.prioridade ?? 'media',
+    status: typeof tarefa.status === 'object' ? tarefa.status.id : tarefa.status,
+    prazo: tarefa.prazo ? tarefa.prazo.slice(0, 16) : '',
+    categoria: (tarefa.categoria ?? []).map((item) => typeof item === 'object' ? item.id : item),
+    responsavel: (tarefa.responsavel ?? []).map((item) => typeof item === 'object' ? item.id : item),
+  })
+}
+
+async function excluirTarefa() {
+  await run(
+    () => tarefaStore.deleteTarefa(tarefaSelecionadaId.value, projetoSelecionadoId.value),
+    'Tarefa excluída.',
+  )
+  tarefaSelecionadaId.value = ''
+}
 
 async function listarProjetos() {
   await run(() => projetoStore.getProjetos({
@@ -26,6 +144,7 @@ async function consultarProjeto(id = projetoId.value) {
     projetoId.value = projeto.id
     projetoForm.nome = projeto.nome
     projetoForm.descricao = projeto.descricao
+    await carregarDadosProjeto()
   }
 }
 
@@ -163,6 +282,9 @@ function selectProfilePhoto(event) {
 function logout() {
   userStore.logout()
   projetoStore.reset()
+  statusStore.reset()
+  categoriaStore.reset()
+  tarefaStore.reset()
   selectedUser.value = null
   message.value = 'Sessão encerrada.'
   error.value = ''
@@ -375,6 +497,120 @@ function logout() {
         </section>
       </fieldset>
     </section>
+
+    <section class="spaced" aria-labelledby="gestao-title">
+      <div class="card-heading">
+        <div>
+          <h2 id="gestao-title">Status, categorias e tarefas</h2>
+          <p>Projeto selecionado: {{ projetoStore.projetoAtual?.nome || 'nenhum' }}</p>
+        </div>
+        <button
+          :disabled="loading || !projetoSelecionadoId"
+          @click="carregarDadosProjeto"
+        >
+          Recarregar dados
+        </button>
+      </div>
+
+      <fieldset class="grid project-controls" :disabled="loading || !projetoSelecionadoId">
+        <section class="card">
+          <h3>Status</h3>
+          <p><code>GET/POST/PATCH/DELETE /status/</code></p>
+          <form @submit.prevent="salvarStatus(true)">
+            <label>Nome<input v-model="statusForm.nome" maxlength="50" required /></label>
+            <label>Cor<input v-model="statusForm.cor" type="color" required /></label>
+            <label>Ordem<input v-model.number="statusForm.ordem" type="number" min="1" required /></label>
+            <label class="checkbox-label">
+              <input v-model="statusForm.finaliza_task" type="checkbox" /> Finaliza a tarefa
+            </label>
+            <button>Criar status</button>
+            <button type="button" :disabled="!statusSelecionadoId" @click="salvarStatus(false)">Atualizar selecionado</button>
+            <button type="button" class="danger" :disabled="!statusSelecionadoId" @click="excluirStatus">Excluir selecionado</button>
+          </form>
+          <ul class="select-list">
+            <li v-for="status in statusStore.statusesOrdenados" :key="status.id">
+              <button type="button" class="item-button" @click="selecionarStatus(status)">
+                <span class="color-dot" :style="{ background: status.cor }"></span>
+                {{ status.ordem }}. {{ status.nome }}{{ status.finaliza_task ? ' (final)' : '' }}
+              </button>
+            </li>
+          </ul>
+        </section>
+
+        <section class="card">
+          <h3>Categorias</h3>
+          <p><code>GET/POST/PATCH/DELETE /categorias/</code></p>
+          <form @submit.prevent="salvarCategoria(true)">
+            <label>Nome<input v-model="categoriaForm.nome" maxlength="50" required /></label>
+            <label>Cor<input v-model="categoriaForm.cor" type="color" required /></label>
+            <button>Criar categoria</button>
+            <button type="button" :disabled="!categoriaSelecionadaId" @click="salvarCategoria(false)">Atualizar selecionada</button>
+            <button type="button" class="danger" :disabled="!categoriaSelecionadaId" @click="excluirCategoria">Excluir selecionada</button>
+          </form>
+          <ul class="select-list">
+            <li v-for="categoria in categoriaStore.categoriasOrdenadas" :key="categoria.id">
+              <button type="button" class="item-button" @click="selecionarCategoria(categoria)">
+                <span class="color-dot" :style="{ background: categoria.cor }"></span>
+                {{ categoria.nome }}
+              </button>
+            </li>
+          </ul>
+        </section>
+
+        <section class="card card-wide">
+          <h3>Tarefas</h3>
+          <p><code>GET/POST/PATCH/DELETE /tarefas/</code></p>
+          <form @submit.prevent="salvarTarefa(true)">
+            <label>Título<input v-model="tarefaForm.titulo" maxlength="150" required /></label>
+            <label>Descrição<textarea v-model="tarefaForm.descricao" rows="3"></textarea></label>
+            <label>
+              Prioridade
+              <select v-model="tarefaForm.prioridade">
+                <option value="baixa">Baixa</option><option value="media">Média</option>
+                <option value="alta">Alta</option><option value="urgente">Urgente</option>
+              </select>
+            </label>
+            <label>
+              Status
+              <select v-model="tarefaForm.status">
+                <option value="">Usar status inicial do projeto</option>
+                <option v-for="status in statusStore.statusesOrdenados" :key="status.id" :value="status.id">{{ status.nome }}</option>
+              </select>
+            </label>
+            <label>Prazo<input v-model="tarefaForm.prazo" type="datetime-local" /></label>
+            <fieldset class="choices">
+              <legend>Categorias</legend>
+              <label v-for="categoria in categoriaStore.categoriasOrdenadas" :key="categoria.id" class="checkbox-label">
+                <input v-model="tarefaForm.categoria" type="checkbox" :value="categoria.id" /> {{ categoria.nome }}
+              </label>
+            </fieldset>
+            <fieldset class="choices">
+              <legend>Responsáveis</legend>
+              <label v-for="participante in projetoStore.participantes" :key="participante.id" class="checkbox-label">
+                <input v-model="tarefaForm.responsavel" type="checkbox" :value="participante.id" /> {{ participante.name || participante.email }}
+              </label>
+            </fieldset>
+            <button>Criar tarefa</button>
+            <button type="button" :disabled="!tarefaSelecionadaId" @click="salvarTarefa(false)">Atualizar selecionada</button>
+            <button type="button" class="danger" :disabled="!tarefaSelecionadaId" @click="excluirTarefa">Excluir selecionada</button>
+          </form>
+
+          <div class="table-wrapper spaced">
+            <table>
+              <thead><tr><th>ID</th><th>Título</th><th>Prioridade</th><th>Status</th><th>Ação</th></tr></thead>
+              <tbody>
+                <tr v-for="tarefa in tarefaStore.tarefas" :key="tarefa.id">
+                  <td>{{ tarefa.id }}</td><td>{{ tarefa.titulo }}</td><td>{{ tarefa.prioridade }}</td><td>{{ tarefa.status }}</td>
+                  <td><button type="button" class="small" @click="selecionarTarefa(tarefa)">Selecionar</button></td>
+                </tr>
+                <tr v-if="!tarefaStore.tarefas.length"><td colspan="5">Nenhuma tarefa carregada.</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <pre v-if="tarefaStore.tarefaAtual">{{ JSON.stringify(tarefaStore.tarefaAtual, null, 2) }}</pre>
+        </section>
+      </fieldset>
+    </section>
   </main>
 </template>
 
@@ -436,7 +672,7 @@ function logout() {
 form, .photo-update { display: grid; gap: 0.8rem; }
 .spaced, .photo-update { margin-top: 1rem; }
 label { display: grid; gap: 0.3rem; font-weight: 600; }
-input, textarea {
+input, textarea, select {
   width: 100%;
   padding: 0.7rem;
   border: 1px solid #aeb8c6;
@@ -448,6 +684,10 @@ input, textarea {
 .checkbox-label { display: flex; align-items: center; }
 .checkbox-label input { width: auto; }
 .project-photo { max-width: 100%; max-height: 180px; object-fit: contain; margin-top: 1rem; }
+.choices { display: flex; flex-wrap: wrap; gap: 0.75rem; padding: 0.8rem; border: 1px solid #dfe3ea; border-radius: 7px; }
+.select-list { display: grid; gap: 0.4rem; margin-top: 1rem; }
+.item-button { display: flex; align-items: center; gap: 0.5rem; width: 100%; text-align: left; }
+.color-dot { width: 0.8rem; height: 0.8rem; border-radius: 50%; }
 
 button {
   padding: 0.7rem 1rem;
