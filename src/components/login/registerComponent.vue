@@ -87,6 +87,15 @@ const emit = defineEmits(['ir-para-login'])
         required
       />
 
+      <label class="photo-field">
+        Foto do perfil (opcional)
+        <input
+          type="file"
+          accept="image/jpeg,image/png"
+          @change="user.foto = $event.target.files?.[0] ?? null"
+        />
+      </label>
+
       <p v-if="erroMessage" role="alert" class="error">{{ erroMessage }}</p>
 
       <AppButton type="submit" :disabled="loading">
@@ -99,6 +108,15 @@ const emit = defineEmits(['ir-para-login'])
 </template>
 
 <style scoped>
+.photo-field {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+.photo-field input {
+  max-width: 100%;
+}
+
 .container {
   --azul: var(--primaria, #00265c);
 
