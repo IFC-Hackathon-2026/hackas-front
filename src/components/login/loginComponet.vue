@@ -1,32 +1,32 @@
 <script setup>
-import { ref } from 'vue';
-import { useRouter, RouterLink } from 'vue-router';
-import { useAuthStore } from '@/stores/auth';
-import AppButton from '@/components/forms/AppButton.vue';
+import { ref } from 'vue'
+import { useRouter, RouterLink } from 'vue-router'
+import { useUserStore } from '@/stores/userStore'
+import AppButton from '@/components/forms/AppButton.vue'
 
-const authStore = useAuthStore();
-const router = useRouter();
+const userStore = useUserStore()
+const router = useRouter()
 
-const email = ref('');
-const password = ref('');
-const showPassword = ref(false);
-const loading = ref(false);
-const erroMessage = ref('');
+const email = ref('')
+const password = ref('')
+const showPassword = ref(false)
+const loading = ref(false)
+const erroMessage = ref('')
 
 async function login() {
-  loading.value = true;
-  erroMessage.value = '';
+  loading.value = true
+  erroMessage.value = ''
   try {
-    await authStore.login(email.value, password.value);
-    await router.replace({ name: 'home' });
+    await userStore.login(email.value, password.value)
+    await router.replace({ name: 'home' })
   } catch {
-    erroMessage.value = 'Não foi possível entrar. Confira seus dados e tente novamente.';
+    erroMessage.value = 'Não foi possível entrar. Confira seus dados e tente novamente.'
   } finally {
-    loading.value = false;
+    loading.value = false
   }
 }
 
-const emit = defineEmits(['ir-para-cadastro']);
+const emit = defineEmits(['ir-para-cadastro'])
 </script>
 
 <template>
@@ -67,12 +67,22 @@ const emit = defineEmits(['ir-para-cadastro']);
             :aria-label="showPassword ? 'Ocultar senha' : 'Mostrar senha'"
             @click="showPassword = !showPassword"
           >
-            <svg v-if="!showPassword" width="26" height="26" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M12 5C6.5 5 2.1 8.4 1 12c1.1 3.6 5.5 7 11 7s9.9-3.4 11-7c-1.1-3.6-5.5-7-11-7Zm0 11.5a4.5 4.5 0 1 1 0-9 4.5 4.5 0 0 1 0 9Zm0-7a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5Z"/>
+            <svg
+              v-if="!showPassword"
+              width="26"
+              height="26"
+              viewBox="0 0 24 24"
+              fill="currentColor"
+            >
+              <path
+                d="M12 5C6.5 5 2.1 8.4 1 12c1.1 3.6 5.5 7 11 7s9.9-3.4 11-7c-1.1-3.6-5.5-7-11-7Zm0 11.5a4.5 4.5 0 1 1 0-9 4.5 4.5 0 0 1 0 9Zm0-7a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5Z"
+              />
             </svg>
             <svg v-else width="26" height="26" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M12 5C6.5 5 2.1 8.4 1 12c1.1 3.6 5.5 7 11 7s9.9-3.4 11-7c-1.1-3.6-5.5-7-11-7Zm0 11.5a4.5 4.5 0 1 1 0-9 4.5 4.5 0 0 1 0 9Z"/>
-              <path d="M3 3l18 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+              <path
+                d="M12 5C6.5 5 2.1 8.4 1 12c1.1 3.6 5.5 7 11 7s9.9-3.4 11-7c-1.1-3.6-5.5-7-11-7Zm0 11.5a4.5 4.5 0 1 1 0-9 4.5 4.5 0 0 1 0 9Z"
+              />
+              <path d="M3 3l18 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
             </svg>
           </button>
         </div>
@@ -89,7 +99,7 @@ const emit = defineEmits(['ir-para-cadastro']);
 
     <p class="signup">
       Não possui uma conta?
-       <a href="#" @click.prevent="emit('ir-para-cadastro')">Cadastre-se.</a>
+      <a href="#" @click.prevent="emit('ir-para-cadastro')">Cadastre-se.</a>
     </p>
   </div>
 </template>
@@ -197,15 +207,14 @@ const emit = defineEmits(['ir-para-cadastro']);
   margin: 0 0 1rem;
 }
 
-
 .forgot {
   align-self: center;
   margin-top: 1.25rem;
   color: var(--azul);
   text-decoration: none;
 }
-.btn-entrar{
-    margin-top: 10px;
+.btn-entrar {
+  margin-top: 10px;
 }
 .signup {
   text-align: center;

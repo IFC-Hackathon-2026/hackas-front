@@ -1,46 +1,46 @@
 <script setup>
-import { reactive, ref } from 'vue';
-import { useRouter } from 'vue-router';
-import { useAuthStore } from '@/stores/auth';
-import appArrow from '../layout/appArrow.vue';
-import AppInput from '@/components/forms/AppInput.vue';
-import AppButton from '@/components/forms/AppButton.vue';
-import StepIndicator from '../layout/StepIndicator.vue';
+import { reactive, ref } from 'vue'
+import { useRouter } from 'vue-router'
+import { useUserStore } from '@/stores/userStore.js'
+import appArrow from '../layout/appArrow.vue'
+import AppInput from '@/components/forms/AppInput.vue'
+import AppButton from '@/components/forms/AppButton.vue'
+import StepIndicator from '../layout/StepIndicator.vue'
 
-const authStore = useAuthStore();
-const router = useRouter();
+const userStore = useUserStore()
+const router = useRouter()
 
 const user = reactive({
   email: '',
   password: '',
   name: null,
-  foto: null
-});
+  foto: null,
+})
 
-const confirmPassword = ref('');
+const confirmPassword = ref('')
 
-const loading = ref(false);
-const erroMessage = ref('');
+const loading = ref(false)
+const erroMessage = ref('')
 
 async function register() {
-  if (loading.value) return;
-  erroMessage.value = '';
+  if (loading.value) return
+  erroMessage.value = ''
   if (user.password !== confirmPassword.value) {
-    erroMessage.value = 'As senhas não coincidem.';
-    return;
+    erroMessage.value = 'As senhas não coincidem.'
+    return
   }
-  loading.value = true;
+  loading.value = true
   try {
-    await authStore.register(user.email, user.password, user.name, user.foto);
-    await router.replace({ name: 'home' });
+    await userStore.register(user.email, user.password, user.name, user.foto)
+    await router.replace({ name: 'home' })
   } catch {
-    erroMessage.value = 'Não foi possível fazer o cadastro. Tente novamente.';
+    erroMessage.value = 'Não foi possível fazer o cadastro. Tente novamente.'
   } finally {
-    loading.value = false;
+    loading.value = false
   }
 }
 
-const emit = defineEmits(['ir-para-login']);
+const emit = defineEmits(['ir-para-login'])
 </script>
 
 <template>
@@ -61,11 +61,7 @@ const emit = defineEmits(['ir-para-login']);
     </div>
 
     <form @submit.prevent="register" class="register-form">
-      <AppInput
-        label="Nome completo"
-        placeholder="Maria Silva"
-        v-model="user.name"
-      />
+      <AppInput label="Nome completo" placeholder="Maria Silva" v-model="user.name" />
 
       <AppInput
         label="E-mail"
@@ -97,9 +93,9 @@ const emit = defineEmits(['ir-para-login']);
         {{ loading ? 'Cadastrando...' : 'Continuar' }}
       </AppButton>
     </form>
-        
-    <StepIndicator/>
-   </div>
+
+    <StepIndicator />
+  </div>
 </template>
 
 <style scoped>
@@ -133,7 +129,9 @@ const emit = defineEmits(['ir-para-login']);
   padding: 0;
   color: #111;
   cursor: pointer;
-  transition: color 0.3s ease, transform 0.3s ease;
+  transition:
+    color 0.3s ease,
+    transform 0.3s ease;
 }
 
 .back-button :deep(.arrow) {
@@ -272,7 +270,7 @@ const emit = defineEmits(['ir-para-login']);
 }
 
 .register-form :deep(.app-button) {
-    margin: 15PX 0;
+  margin: 15px 0;
   height: 48px;
   font-size: 1rem;
 }
