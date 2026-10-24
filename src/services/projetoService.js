@@ -18,10 +18,6 @@ export default class ProjetoService {
     return api.get(`/projetos/${id}/`)
   }
 
-  updateParticipante(projetoId, participacaoId, cargo) {
-    return api.patch(`/projetos/${projetoId}/participantes/${participacaoId}/`, { cargo })
-  }
-
   removeParticipante(projetoId, participacaoId) {
     return api.delete(`/projetos/${projetoId}/participantes/${participacaoId}/`)
   }

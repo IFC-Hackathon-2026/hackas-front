@@ -1,6 +1,6 @@
 <script setup>
 import { computed, ref, watch } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import ParticipantesComponent from './participantesComponent.vue'
 import SolicitacoesComponent from './solicitacaoesComponent.vue'
 import { useProjetoStore } from '@/stores/projetoStore'
@@ -10,6 +10,9 @@ import atalhosEventoComponent from '../layout/atalhosEventoComponent.vue'
 const projetoStore = useProjetoStore()
 const carregando = ref(false)
 const erro = ref('')
+const excluindo = ref(false)
+const erroExclusao = ref('')
+const router = useRouter()
 
 const abas = ref('participantes')
 const route = useRoute()
@@ -30,7 +33,29 @@ watch(equipeId, async (id, anterior, onCleanup) => {
     if (ativa) carregando.value = false
   }
 }, { immediate: true })
-watch(() => route.fullPath, () => { abas.value = 'participantes' })
+watch(() => route.fullPath, () => {
+  abas.value = 'participantes'
+  erroExclusao.value = ''
+})
+
+async function excluirEquipe() {
+  if (excluindo.value || !podeVerConfiguracoes.value || !projetoStore.podeExcluir) return
+  const equipe = projetoStore.projetoAtual
+  if (!window.confirm(`Excluir a equipe “${equipe.nome}”? Esta ação não pode ser desfeita.`)) return
+  excluindo.value = true
+  erroExclusao.value = ''
+  try {
+    await projetoStore.deleteProjeto(equipe.id)
+  } catch (error) {
+    if (equipeId.value === String(equipe.id)) {
+      erroExclusao.value = error.response?.data?.detail || 'Não foi possível excluir a equipe. Tente novamente.'
+    }
+    return
+  } finally {
+    excluindo.value = false
+  }
+  if (equipeId.value === String(equipe.id)) await router.replace({ name: 'home' })
+}
 
 
 </script>
@@ -67,13 +92,14 @@ watch(() => route.fullPath, () => { abas.value = 'participantes' })
         </button>
       </nav>
 
-      <button v-if="projetoStore.podeExcluir" type="button" class="excluir">
+      <button v-if="projetoStore.podeExcluir" type="button" class="excluir" :disabled="excluindo" @click="excluirEquipe">
         <span class="mdi mdi-trash-can-outline"></span>
-        Excluir evento
+        {{ excluindo ? 'Excluindo...' : 'Excluir equipe' }}
       </button>
     </aside>
 
     <div class="conteudo">
+      <p v-if="erroExclusao" class="erro-exclusao" role="alert">{{ erroExclusao }}</p>
       <ParticipantesComponent v-if="abas === 'participantes'" />
       <SolicitacoesComponent v-else />
     </div>
@@ -81,6 +107,14 @@ watch(() => route.fullPath, () => { abas.value = 'participantes' })
 </template>
 
 <style scoped>
+.erro-exclusao {
+  margin-bottom: 20px;
+  color: #a12424;
+}
+.excluir:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
 .config {
   --azul: var(--primaria, #01295f);
 

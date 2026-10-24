@@ -2,10 +2,10 @@
 import { computed, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import api from '@/api/config'
-import ProjetoService from '@/services/projetoService'
 import UserService from '@/services/userService'
+import { useProjetoStore } from '@/stores/projetoStore'
 
-const service = new ProjetoService()
+const projetoStore = useProjetoStore()
 const userService = new UserService()
 const route = useRoute()
 const emit = defineEmits(['equipe-carregada'])
@@ -22,11 +22,20 @@ const error = ref('')
 const memberWarning = ref('')
 const actionPending = ref(false)
 const actionMessage = ref('')
-const podeGerenciar = computed(() => equipe.value?.meu_cargo === 'fundador')
+const equipeAtualSelecionada = computed(() =>
+  String(projetoStore.projetoAtual?.id) === equipeId.value,
+)
+const podeGerenciar = computed(() => equipeAtualSelecionada.value && projetoStore.podeExcluir)
 function podeRemover(participacao) {
-  if (participacao.cargo === 'fundador') return false
+  if (!equipeAtualSelecionada.value || participacao.id == null || participacao.cargo === 'fundador') return false
   return podeGerenciar.value || (
-    equipe.value?.meu_cargo === 'organizador' && ['membro', 'participante'].includes(participacao.cargo)
+    projetoStore.meuCargo === 'organizador' && participacao.cargo === 'membro'
+  )
+}
+function podeAlterarCargo(participacao) {
+  if (!equipeAtualSelecionada.value || participacao.id == null || participacao.cargo === 'fundador') return false
+  return podeGerenciar.value || (
+    projetoStore.meuCargo === 'organizador' && participacao.cargo === 'membro'
   )
 }
 let requestId = 0
@@ -49,25 +58,27 @@ const cargos = { fundador: 'Fundador', organizador: 'Organizador', membro: 'Memb
 
 async function gerenciarParticipante(participacao, remover = false) {
   if (actionPending.value || participacao.id == null || participacao.cargo === 'fundador') return
-  if (remover ? !podeRemover(participacao) : !podeGerenciar.value) return
+  if (remover ? !podeRemover(participacao) : !podeAlterarCargo(participacao)) return
   const nome = participacao.usuario?.name || participacao.usuario?.email || 'este participante'
   if (remover && !window.confirm(`Remover ${nome} da equipe?`)) return
   menuAberto.value = null
-  const projetoId = equipeId.value
   const cargo = participacao.cargo === 'organizador' ? 'membro' : 'organizador'
+  const idEquipeDaAcao = equipeId.value
   actionPending.value = true
   actionMessage.value = ''
   error.value = ''
   try {
     if (remover) {
-      await service.removeParticipante(projetoId, participacao.id)
+      await projetoStore.deleteParticipante(participacao.id)
     } else {
-      await service.updateParticipante(projetoId, participacao.id, cargo)
+      await projetoStore.updateParticipante(participacao.id, cargo)
     }
+    if (equipeId.value !== idEquipeDaAcao) return
     await carregarParticipantes()
     actionMessage.value = remover ? 'Participante removido da equipe.' : 'Cargo atualizado.'
   } catch (requestError) {
-    error.value = requestError.response?.data?.detail || 'Não foi possível concluir a alteração.'
+    if (equipeId.value !== idEquipeDaAcao) return
+    error.value = requestError.response?.data?.detail || requestError.message || 'Não foi possível concluir a alteração.'
   } finally {
     actionPending.value = false
   }
@@ -85,7 +96,9 @@ async function carregarParticipantes() {
   loadingMembers.value = Boolean(equipeId.value)
   if (!equipeId.value) return
   try {
-    const { data } = await service.getProjeto(equipeId.value)
+    const data = equipeAtualSelecionada.value
+      ? await projetoStore.getProjeto(equipeId.value)
+      : await projetoStore.selecionarProjeto(equipeId.value)
     if (currentRequest !== requestId) return
     // Assim como no playground, consulta /usuarios/{id}/ para obter o perfil completo.
     const incompletos = (data.participacoes ?? []).filter(({ usuario }) =>
@@ -161,7 +174,7 @@ watch(equipeId, carregarParticipantes, { immediate: true })
             <span class="member-role">{{ cargos[participacao.cargo] ?? participacao.cargo }}</span>
           </div>
           <span v-if="['fundador', 'organizador'].includes(participacao.cargo)" class="mdi mdi-crown crown" :title="cargos[participacao.cargo]" aria-hidden="true"></span>
-          <div v-if="podeGerenciar || podeRemover(participacao)" class="member-actions">
+          <div v-if="podeGerenciar || podeRemover(participacao) || podeAlterarCargo(participacao)" class="member-actions">
 
             <button type="button" class="more" :aria-label="'Ações para ' + (participacao.usuario?.name || 'participante')"
               :aria-expanded="menuAberto === chaveParticipacao(participacao)" :disabled="actionPending"
@@ -175,7 +188,7 @@ watch(equipeId, carregarParticipantes, { immediate: true })
                 <p v-if="participacao.cargo === 'fundador'" class="protected-note">O fundador não pode ser removido ou ter o cargo alterado.</p>
                 <p v-else-if="participacao.id == null" class="protected-note">A API não retornou o identificador desta participação.</p>
                 <template v-else>
-                <button v-if="podeGerenciar" type="button" :disabled="actionPending" @click="gerenciarParticipante(participacao)">
+                <button v-if="podeAlterarCargo(participacao)" type="button" :disabled="actionPending" @click="gerenciarParticipante(participacao)">
                   <span :class="['mdi', participacao.cargo === 'organizador' ? 'mdi-crown-outline' : 'mdi-crown']" aria-hidden="true"></span>
                   {{ participacao.cargo === 'organizador' ? 'Retirar de organizador' : 'Promover a organizador' }}
                 </button>

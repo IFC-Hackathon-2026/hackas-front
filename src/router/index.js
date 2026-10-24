@@ -29,10 +29,16 @@ const router = createRouter({
       meta: { guestOnly: true },
     },
     {
+      path: '/dashboard/:id',
+      name: 'dashboard',
+      meta: { requiresAuth: true },
+      component: () => import('../components/layout/atalhosEventoComponent.vue'),
+    },
+    {
       path: '/config/:id?',
       name: 'config',
       meta: { requiresAuth: true },
-      component: () => import('../components/configuracao-organizador/princiapalconfigComponent.vue')
+      component: () => import('../components/atalhos/princiapalconfigComponent.vue')
     },
   ],
 })

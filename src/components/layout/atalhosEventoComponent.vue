@@ -2,6 +2,7 @@
 import { computed } from 'vue'
 import { useRoute } from 'vue-router'
 import { useProjetoStore } from '@/stores/projetoStore'
+import DashboardComponent from '@/components/atalhos/dashboardComponent.vue'
 
 const route = useRoute()
 const projetoStore = useProjetoStore()
@@ -15,7 +16,12 @@ const podeVerConfiguracoes = computed(() => equipeId.value &&
     <ul>
       <li><span class="mdi mdi-view-grid-outline" aria-hidden="true"></span> Kanban</li>
       <li><span class="mdi mdi-file-document-multiple-outline" aria-hidden="true"></span> Documentos</li>
-      <li><span class="mdi mdi-information-outline" aria-hidden="true"></span> Dashboard</li>
+      <li>
+        <RouterLink v-if="equipeId" :to="{ name: 'dashboard', params: { id: equipeId } }" active-class="active">
+          <span class="mdi mdi-chart-box-outline" aria-hidden="true"></span> Dashboard
+        </RouterLink>
+        <span v-else>Dashboard</span>
+      </li>
 
       
       <li v-if="podeVerConfiguracoes">
@@ -25,6 +31,7 @@ const podeVerConfiguracoes = computed(() => equipeId.value &&
       </li>
     </ul>
   </nav>
+  <DashboardComponent v-if="route.name === 'dashboard'" />
 </template>
 
 <style scoped>
