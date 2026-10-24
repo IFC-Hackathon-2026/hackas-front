@@ -7,6 +7,7 @@ const projetoService = new ProjetoService()
 
 export const useProjetoStore = defineStore('projeto', () => {
   const userStore = useUserStore()
+  let consultaProjetos = 0
   let selecao = 0
   let consultaAtual = null
   let idConsulta = null
@@ -63,8 +64,10 @@ export const useProjetoStore = defineStore('projeto', () => {
 
   // params aceita meus, search e os parâmetros de paginação da API.
   function getProjetos(params = {}) {
+    const consulta = ++consultaProjetos
     return execute(async () => {
       const { data } = await projetoService.getProjetos(params)
+      if (consulta !== consultaProjetos) return data.results ?? data
       projetos.value = data.results ?? data
       total.value = data.count ?? projetos.value.length
       next.value = data.next ?? null

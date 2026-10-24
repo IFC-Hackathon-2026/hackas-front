@@ -7,6 +7,7 @@ const props = defineProps({
     required: true,
   },
   bloqueado: Boolean,
+  amplo: Boolean,
 })
 
 const visible = defineModel('visible', { type: Boolean, default: false })
@@ -35,6 +36,7 @@ watch(visible, syncVisibility)
     <dialog
       ref="dialog"
       class="app-modal"
+      :class="{ 'app-modal--wide': amplo }"
       :aria-label="props.title"
       @cancel.prevent="fechar"
       @close="visible = false"
@@ -82,6 +84,15 @@ watch(visible, syncVisibility)
   min-height: 0;
   overflow-y: auto;
   overscroll-behavior: contain;
+}
+
+.app-modal--wide {
+  width: min(58rem, calc(100vw - 2rem));
+  max-height: calc(100dvh - 2rem);
+}
+.app-modal--wide .modal-content { flex-shrink: 0; overflow: visible; }
+@media (max-height: 600px), (max-width: 600px) {
+  .app-modal--wide { overflow-y: auto; }
 }
 
 .app-modal::backdrop {
