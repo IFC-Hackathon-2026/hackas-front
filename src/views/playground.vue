@@ -5,6 +5,7 @@ import { useProjetoStore } from '@/stores/projetoStore'
 import { useStatusStore } from '@/stores/statusStore'
 import { useCategoriaStore } from '@/stores/categoriaStore'
 import { useTarefaStore } from '@/stores/tarefaStore'
+import { useDocumentoStore } from '@/stores/documentoStore'
 
 defineOptions({ name: 'ApiPlayground' })
 
@@ -13,6 +14,7 @@ const projetoStore = useProjetoStore()
 const statusStore = useStatusStore()
 const categoriaStore = useCategoriaStore()
 const tarefaStore = useTarefaStore()
+const documentoStore = useDocumentoStore()
 const projetoForm = reactive({ nome: '', descricao: '' })
 const projetoFiltros = reactive({ search: '', meus: true, page: 1 })
 const projetoId = ref('')
@@ -25,6 +27,11 @@ const tarefaForm = reactive({
 const statusSelecionadoId = ref('')
 const categoriaSelecionadaId = ref('')
 const tarefaSelecionadaId = ref('')
+const documentoSelecionadoId = ref('')
+const documentoArquivo = ref(null)
+const documentoBusca = ref('')
+const documentoForm = reactive({ nome: '', tarefa: '', description: '' })
+const participanteForm = reactive({ usuario: '', cargo: 'membro' })
 
 const projetoSelecionadoId = computed(() => projetoStore.projetoAtual?.id ?? null)
 
@@ -36,8 +43,9 @@ async function carregarDadosProjeto() {
       statusStore.getStatuses(id),
       categoriaStore.getCategorias(id),
       tarefaStore.getTarefas(id, { page_size: 100 }),
+      documentoStore.getDocumentos(id, { page_size: 100 }),
     ]),
-    'Status, categorias e tarefas carregados.',
+    'Status, categorias, tarefas e documentos carregados.',
   )
   if (resultado && !tarefaForm.status) tarefaForm.status = statusStore.statusInicial?.id ?? ''
 }
@@ -130,6 +138,63 @@ async function excluirTarefa() {
   tarefaSelecionadaId.value = ''
 }
 
+async function listarDocumentos() {
+  await run(
+    () => documentoStore.getDocumentos(projetoSelecionadoId.value, {
+      page_size: 100,
+      search: documentoBusca.value,
+    }),
+    'Documentos carregados.',
+  )
+}
+
+async function criarDocumento() {
+  if (!documentoArquivo.value) {
+    error.value = 'Selecione um arquivo PDF.'
+    return
+  }
+  const documento = await run(
+    () => documentoStore.uploadAndCreate({
+      file: documentoArquivo.value,
+      nome: documentoForm.nome,
+      tarefa: documentoForm.tarefa,
+      description: documentoForm.description,
+    }),
+    'Documento enviado e vinculado à tarefa.',
+  )
+  if (documento) selecionarDocumento(documento)
+}
+
+async function atualizarDocumento() {
+  const documento = await run(
+    () => documentoStore.updateDocumento(documentoSelecionadoId.value, {
+      nome: documentoForm.nome,
+      tarefa: documentoForm.tarefa,
+    }),
+    'Documento atualizado.',
+  )
+  if (documento) selecionarDocumento(documento)
+}
+
+function selecionarDocumento(documento) {
+  documentoSelecionadoId.value = documento.id
+  documentoForm.nome = documento.nome ?? ''
+  documentoForm.tarefa = documento.tarefa_origem?.id ?? ''
+  documentoForm.description = documento.arquivo?.description ?? ''
+}
+
+async function excluirDocumento() {
+  await run(
+    () => documentoStore.deleteDocumento(documentoSelecionadoId.value),
+    'Documento excluído.',
+  )
+  documentoSelecionadoId.value = ''
+}
+
+function selecionarArquivoDocumento(event) {
+  documentoArquivo.value = event.target.files?.[0] ?? null
+}
+
 async function listarProjetos() {
   await run(() => projetoStore.getProjetos({
     search: projetoFiltros.search,
@@ -169,6 +234,29 @@ async function excluirProjeto() {
   }, 'Projeto excluído.')
 }
 
+async function alterarCargoParticipante(participante, cargo) {
+  await run(
+    () => projetoStore.updateParticipante(participante.participacaoId, cargo),
+    cargo === 'organizador' ? 'Membro promovido a organizador.' : 'Organizador alterado para membro.',
+  )
+}
+
+async function adicionarParticipante() {
+  const projeto = await run(
+    () => projetoStore.createParticipante(participanteForm.usuario, participanteForm.cargo),
+    'Participante adicionado ou atualizado no projeto.',
+  )
+  if (projeto) participanteForm.usuario = ''
+}
+
+async function removerParticipante(participante) {
+  if (!window.confirm(`Remover ${participante.name || participante.email} do projeto?`)) return
+  await run(
+    () => projetoStore.deleteParticipante(participante.participacaoId),
+    'Participante removido do projeto.',
+  )
+}
+
 const loginForm = reactive({ email: '', password: '' })
 const registerForm = reactive({ name: '', email: '', password: '', foto: null })
 const profileForm = reactive({ name: '', email: '' })
@@ -195,8 +283,9 @@ function resolveMediaUrl(url) {
 
 function getErrorMessage(requestError) {
   const data = requestError.response?.data
-  if (data) return JSON.stringify(data, null, 2)
-  return requestError.message ?? 'Erro desconhecido'
+  const stage = requestError.documentoStage ? `Falha no ${requestError.documentoStage}:\n` : ''
+  if (data) return `${stage}${JSON.stringify(data, null, 2)}`
+  return `${stage}${requestError.message ?? 'Erro desconhecido'}`
 }
 
 async function run(action, successMessage) {
@@ -285,6 +374,7 @@ function logout() {
   statusStore.reset()
   categoriaStore.reset()
   tarefaStore.reset()
+  documentoStore.reset()
   selectedUser.value = null
   message.value = 'Sessão encerrada.'
   error.value = ''
@@ -490,7 +580,49 @@ function logout() {
               <button type="button" class="danger" :disabled="!projetoStore.podeExcluir" @click="excluirProjeto">Excluir projeto selecionado</button>
             </div>
             <h4 class="spaced">Participantes</h4>
-            <ul><li v-for="participante in projetoStore.participantes" :key="participante.id">{{ participante.name }} — {{ participante.cargo }}</li></ul>
+            <p><code>POST/PATCH/DELETE /projetos/{id}/participantes/...</code></p>
+            <form v-if="projetoStore.podeGerenciarParticipantes" @submit.prevent="adicionarParticipante">
+              <label>
+                Usuário
+                <select v-model="participanteForm.usuario" required>
+                  <option value="" disabled>Selecione um usuário</option>
+                  <option
+                    v-for="usuario in userStore.users.filter((item) => !projetoStore.participantes.some((participante) => participante.id === item.id))"
+                    :key="usuario.id"
+                    :value="usuario.id"
+                  >{{ usuario.name || usuario.email }} (ID {{ usuario.id }})</option>
+                </select>
+              </label>
+              <label>
+                Cargo inicial
+                <select v-model="participanteForm.cargo">
+                  <option value="membro">Membro</option>
+                  <option value="organizador">Organizador</option>
+                </select>
+              </label>
+              <button type="button" @click="run(() => userStore.getAllUsers(), 'Usuários disponíveis carregados.')">Carregar usuários</button>
+              <button :disabled="!participanteForm.usuario">Adicionar participante</button>
+            </form>
+            <ul>
+              <li v-for="participante in projetoStore.participantes" :key="participante.id">
+                {{ participante.name || participante.email }} — {{ participante.cargo }}
+                <template v-if="projetoStore.podeGerenciarParticipantes && participante.cargo !== 'fundador'">
+                  <button
+                    v-if="participante.cargo === 'membro'"
+                    type="button"
+                    class="small"
+                    @click="alterarCargoParticipante(participante, 'organizador')"
+                  >Promover</button>
+                  <button
+                    v-else
+                    type="button"
+                    class="small"
+                    @click="alterarCargoParticipante(participante, 'membro')"
+                  >Tornar membro</button>
+                  <button type="button" class="small danger" @click="removerParticipante(participante)">Remover</button>
+                </template>
+              </li>
+            </ul>
             <pre>{{ JSON.stringify(projetoStore.projetoAtual, null, 2) }}</pre>
           </template>
           <p v-else>Nenhum projeto selecionado.</p>
@@ -611,6 +743,91 @@ function logout() {
         </section>
       </fieldset>
     </section>
+
+    <section class="spaced" aria-labelledby="documentos-title">
+      <div class="card-heading">
+        <div>
+          <h2 id="documentos-title">Documentos das tarefas</h2>
+          <p>Envie PDFs e consulte a tarefa de origem de cada documento.</p>
+        </div>
+        <form class="inline-form" @submit.prevent="listarDocumentos">
+          <input v-model="documentoBusca" placeholder="Buscar por documento ou tarefa" />
+          <button :disabled="loading || !projetoSelecionadoId">Buscar</button>
+        </form>
+      </div>
+
+      <fieldset class="grid project-controls" :disabled="loading || !projetoSelecionadoId">
+        <section class="card">
+          <h3>Novo documento</h3>
+          <p><code>POST multipart /documentos/</code> cria o arquivo e o vincula à tarefa em uma única operação.</p>
+          <form @submit.prevent="criarDocumento">
+            <label>Nome<input v-model="documentoForm.nome" maxlength="200" required /></label>
+            <label>
+              Tarefa de origem
+              <select v-model="documentoForm.tarefa" required>
+                <option value="" disabled>Selecione uma tarefa</option>
+                <option v-for="tarefa in tarefaStore.tarefas" :key="tarefa.id" :value="tarefa.id">
+                  {{ tarefa.titulo }}
+                </option>
+              </select>
+            </label>
+            <label>Descrição do arquivo<input v-model="documentoForm.description" maxlength="255" /></label>
+            <label>PDF<input type="file" accept="application/pdf" required @change="selecionarArquivoDocumento" /></label>
+            <button>Enviar e vincular</button>
+            <button
+              type="button"
+              :disabled="!documentoSelecionadoId || !documentoForm.nome || !documentoForm.tarefa"
+              @click="atualizarDocumento"
+            >
+              Atualizar nome e tarefa
+            </button>
+            <button type="button" class="danger" :disabled="!documentoSelecionadoId" @click="excluirDocumento">
+              Excluir selecionado
+            </button>
+          </form>
+        </section>
+
+        <section class="card">
+          <h3>Documento selecionado</h3>
+          <template v-if="documentoSelecionadoId">
+            <pre>{{ JSON.stringify(documentoStore.documentos.find((item) => item.id === documentoSelecionadoId), null, 2) }}</pre>
+          </template>
+          <p v-else>Selecione um documento na lista.</p>
+        </section>
+
+        <section class="card card-wide">
+          <div class="card-heading">
+            <div>
+              <h3>Lista do projeto</h3>
+              <p>Total: {{ documentoStore.total }}</p>
+            </div>
+            <button type="button" @click="listarDocumentos">Recarregar</button>
+          </div>
+          <div class="table-wrapper">
+            <table>
+              <thead>
+                <tr><th>ID</th><th>Documento</th><th>Tarefa de origem</th><th>Enviado por</th><th>Arquivo</th><th>Ação</th></tr>
+              </thead>
+              <tbody>
+                <tr v-for="documento in documentoStore.documentos" :key="documento.id">
+                  <td>{{ documento.id }}</td>
+                  <td>{{ documento.nome }}</td>
+                  <td>{{ documento.tarefa_origem?.titulo }} (ID {{ documento.tarefa_origem?.id }})</td>
+                  <td>{{ documento.enviado_por?.name || `ID ${documento.enviado_por?.id}` }}</td>
+                  <td>
+                    <a v-if="documento.arquivo?.url" :href="resolveMediaUrl(documento.arquivo.url)" target="_blank" rel="noopener noreferrer">
+                      Abrir PDF
+                    </a>
+                  </td>
+                  <td><button type="button" class="small" @click="selecionarDocumento(documento)">Selecionar</button></td>
+                </tr>
+                <tr v-if="!documentoStore.documentos.length"><td colspan="6">Nenhum documento encontrado.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+      </fieldset>
+    </section>
   </main>
 </template>
 
@@ -670,6 +887,7 @@ function logout() {
 .card > p { margin-bottom: 1rem; color: #667085; }
 
 form, .photo-update { display: grid; gap: 0.8rem; }
+.inline-form { display: flex; align-items: end; }
 .spaced, .photo-update { margin-top: 1rem; }
 label { display: grid; gap: 0.3rem; font-weight: 600; }
 input, textarea, select {
