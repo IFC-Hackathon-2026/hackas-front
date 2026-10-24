@@ -4,7 +4,6 @@ import { useUserStore } from '@/stores/userStore.js'
 import HomeView from '../views/HomeView.vue'
 import EventsView from '../views/EventsView.vue'
 
-
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
@@ -70,6 +69,11 @@ const router = createRouter({
       meta: { guestOnly: true },
     },
     {
+      path: '/verification',
+      name: 'verification',
+      component: () => import('../components/login/verificationComponent.vue'),
+    },
+    {
       path: '/aboutus',
       name: 'aboutus',
       component: () => import('../views/AboutUsView.vue'),
@@ -126,5 +130,6 @@ router.beforeEach((to) => {
     return obterDestino(to.query.redirect)
   }
 })
+
 
 export default router

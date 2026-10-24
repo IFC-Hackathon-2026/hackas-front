@@ -1,6 +1,7 @@
 
 <script setup>
 import { reactive, ref, onBeforeUnmount } from 'vue'
+import { useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/userStore'
 import { notificacao } from '@/services/notificacaoService'
 import appArrow from '../layout/appArrow.vue'
@@ -9,8 +10,9 @@ import AppButton from '@/components/forms/AppButton.vue'
 import StepIndicator from '../layout/StepIndicator.vue'
 
 const userStore = useUserStore()
+const router = useRouter()
 
-const emit = defineEmits(['ir-para-login', 'cadastro-sucesso'])
+const emit = defineEmits(['ir-para-login'])
 
 const user = reactive({
   email: '',
@@ -80,7 +82,7 @@ async function register() {
     await userStore.register(user.email, user.password, user.name, user.foto)
     notificacao.sucesso('Cadastro realizado com sucesso.')
 
-    emit('cadastro-sucesso')
+    await router.replace({ name: 'verification' })
   } catch {
     erroMessage.value = 'Não foi possível fazer o cadastro. Tente novamente.'
     notificacao.erro(erroMessage.value)

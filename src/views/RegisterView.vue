@@ -23,17 +23,21 @@ const erroMessage = ref('')
 
 async function register() {
   if (loading.value) return
+
   erroMessage.value = ''
+
   if (user.password !== confirmPassword.value) {
     erroMessage.value = 'As senhas não coincidem.'
     notificacao.aviso(erroMessage.value)
     return
   }
+
   loading.value = true
+
   try {
     await userStore.register(user.email, user.password, user.name, user.foto)
     notificacao.sucesso('Cadastro realizado com sucesso.')
-    await router.replace({ name: 'eventos' })
+    await router.replace({ name: 'verification' })
   } catch {
     erroMessage.value = 'Não foi possível fazer o cadastro. Tente novamente.'
     notificacao.erro(erroMessage.value)
