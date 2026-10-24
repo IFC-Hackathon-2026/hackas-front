@@ -1,35 +1,27 @@
 
 <script setup>
-import { computed, ref } from 'vue'
+import { computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import AppButton from '@/components/forms/AppButton.vue'
+import { PROJECT_CATEGORY_LABELS } from '@/constants/projectCategories'
+import { useProjetoStore } from '@/stores/projetoStore'
+import { useUserStore } from '@/stores/userStore'
 
 const router = useRouter()
+const projetoStore = useProjetoStore()
+const userStore = useUserStore()
+const eventosDestaque = computed(() => projetoStore.projetosDestaque)
 
-const eventos = ref([
-  {
-    id: 1,
-    titulo: 'Produto 1',
-    categoria: 'Categoria',
-    imagem: null
-  },
-  {
-    id: 2,
-    titulo: 'Produto 2',
-    categoria: 'Categoria',
-    imagem: null
-  },
-  {
-    id: 3,
-    titulo: 'Produto 3',
-    categoria: 'Categoria',
-    imagem: null
-  }
-])
-
-const eventosDestaque = computed(() => eventos.value.slice(0, 3))
+function nomeCategoria(evento) {
+  const categoria = evento.categorias?.[0]
+  return PROJECT_CATEGORY_LABELS[categoria] ?? ''
+}
 
 function navegarPara(destino) {
+  if (userStore.isAuthenticated) {
+    router.push(destino)
+    return
+  }
   router.push({
     path: '/login',
     query: {
@@ -52,6 +44,8 @@ function voltarAoTopo() {
     behavior: 'smooth'
   })
 }
+
+onMounted(() => projetoStore.getProjetosDestaque().catch(() => {}))
 </script>
 
 <template>
@@ -112,37 +106,50 @@ function voltarAoTopo() {
           </button>
         </div>
 
-        <ul class="lista-eventos">
-          <li
-            v-for="evento in eventosDestaque"
-            :key="evento.id"
-            class="card-evento"
-          >
-            <div class="evento-imagem">
-              <img
-                v-if="evento.imagem"
-                :src="evento.imagem"
-                :alt="evento.titulo"
-              />
-            </div>
+<p v-if="projetoStore.loading" class="estado-destaques">
+  Carregando destaques...
+</p>
 
-            <div class="evento-informacoes">
-              <div class="evento-textos">
-                <h3>{{ evento.titulo }}</h3>
-                <p>{{ evento.categoria }}</p>
-              </div>
+<p v-else-if="projetoStore.error" class="estado-destaques">
+  Não foi possível carregar os destaques.
+</p>
 
-              <button
-                type="button"
-                class="evento-seta"
-                :aria-label="`Ver evento ${evento.titulo}`"
-                @click="navegarPara(`/eventos/${evento.id}`)"
-              >
-                <span class="mdi mdi-arrow-right"></span>
-              </button>
-            </div>
-          </li>
-        </ul>
+<ul v-else-if="eventosDestaque.length" class="lista-eventos" tabindex="0" aria-label="Eventos em destaque">
+  <li
+    v-for="evento in eventosDestaque"
+    :key="evento.id"
+    class="card-evento"
+    role="link"
+    tabindex="0"
+    :aria-label="`Ver evento ${evento.nome}`"
+    @click="navegarPara(`/eventos/${evento.id}`)"
+    @keydown.enter="navegarPara(`/eventos/${evento.id}`)"
+    @keydown.space.prevent="navegarPara(`/eventos/${evento.id}`)"
+  >
+    <div class="evento-imagem">
+      <img
+        v-if="evento.foto?.url"
+        :src="evento.foto.url"
+        :alt="evento.nome"
+      />
+    </div>
+
+    <div class="evento-informacoes">
+      <div class="evento-textos">
+        <h3>{{ evento.nome }}</h3>
+        <p>{{ nomeCategoria(evento) }}</p>
+      </div>
+
+      <span class="evento-seta" aria-hidden="true">
+        <span class="mdi mdi-arrow-right"></span>
+      </span>
+    </div>
+  </li>
+</ul>
+
+<p v-else class="estado-destaques">
+  Ainda não há eventos em destaque.
+</p>
       </section>
     </div>
 
@@ -186,7 +193,6 @@ function voltarAoTopo() {
 .homepage {
   width: 100%;
   color: #071a35;
-  overflow: clip;
 }
 
 
@@ -331,6 +337,12 @@ function voltarAoTopo() {
   margin: 0;
 }
 
+.estado-destaques {
+  margin: 2rem 0;
+  color: #426b9c;
+  text-align: center;
+}
+
 .card-evento {
   overflow: hidden;
   background: #ffffff;
@@ -344,6 +356,7 @@ function voltarAoTopo() {
 .card-evento:hover {
   transform: translateY(-8px);
   box-shadow: 0 12px 28px rgb(1 41 95 / 18%);
+  cursor: pointer;
 }
 
 .evento-imagem {
@@ -564,6 +577,69 @@ function voltarAoTopo() {
   .evento-imagem img,
   .evento-seta {
     transition: none;
+  }
+}
+
+@media (max-width: 600px) {
+  .destaques-cabecalho {
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+  }
+  .link-ver-todos {
+    min-height: 44px;
+    flex-shrink: 0;
+    gap: 0.5rem;
+    font-size: 0.875rem;
+  }
+  .lista-eventos {
+    display: flex;
+    gap: 16px;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    scroll-padding-inline: 4px;
+    overscroll-behavior-x: contain;
+    padding: 12px 4px 24px;
+    scrollbar-width: thin;
+  }
+  .card-evento {
+    flex: 0 0 85%;
+    min-width: 0;
+    scroll-snap-align: start;
+  }
+  .card-evento:hover {
+    transform: none;
+  }
+  .evento-imagem {
+    height: 180px;
+  }
+  .evento-informacoes {
+    padding: 14px;
+    min-height: 88px;
+  }
+  .evento-textos h3 {
+    font-size: 1rem;
+  }
+  .evento-textos p {
+    font-size: 0.875rem;
+  }
+  .evento-seta {
+    display: grid;
+    place-items: center;
+    min-width: 44px;
+    min-height: 44px;
+  }
+  .lista-eventos:focus-visible {
+    outline: 2px solid #2767aa;
+    outline-offset: 4px;
+  }
+  .compromisso {
+    padding: 40px 24px;
+  }
+  .compromisso h2 {
+    font-size: 1.25rem;
+  }
+  .compromisso p {
+    line-height: 1.6;
   }
 }
 </style>

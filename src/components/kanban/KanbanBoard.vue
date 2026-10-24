@@ -22,6 +22,8 @@ const categoriaStore = useCategoriaStore()
 const selectedProject = ref(projetoStore.projetoAtual?.id ?? '')
 const showModal = ref(false)
 const openingTask = ref(false)
+const arrastandoTarefa = ref(false)
+const movendoTarefa = ref(false)
 const taskError = ref('')
 const loading = ref(false)
 const error = ref('')
@@ -35,6 +37,11 @@ let request = 0
 const { filtros } = storeToRefs(tarefaStore)
 const buscando = ref(false)
 const erroBusca = ref('')
+const arrasteDesabilitado = computed(() =>
+  loading.value || buscando.value || openingTask.value || movendoTarefa.value ||
+  showModal.value || mostrarModalColuna.value || Boolean(colunaExcluir.value) ||
+  statusStore.alterandoColuna || tarefaStore.loading,
+)
 let tempoBusca
 let versaoBusca = 0
 
@@ -62,7 +69,7 @@ watch(
     filtros.value.atrasadas,
   ],
   () => {
-    if (loading.value) return
+    if (loading.value || movendoTarefa.value) return
     clearTimeout(tempoBusca)
     tempoBusca = setTimeout(buscarTarefas, 350)
   },
@@ -82,6 +89,8 @@ const tasks = computed(() =>
     startDate: date(task.criado_em),
     endDate: date(task.prazo),
     prioridade: task.prioridade,
+    atrasada: !task.concluido_em && Boolean(task.atrasada || task.situacao === 'atrasada'),
+    concluidoEm: task.concluido_em,
     categorias: (task.categoria ?? [])
       .map((categoria) =>
         typeof categoria === 'object'
@@ -89,7 +98,7 @@ const tasks = computed(() =>
           : categoriaStore.categorias.find((item) => item.id === categoria),
       )
       .filter(Boolean),
-  })),
+  })).sort((a, b) => Number(b.atrasada) - Number(a.atrasada)),
 )
 const kabanCategories = computed(() =>
   statusStore.statusesOrdenados.map((status) => ({
@@ -153,11 +162,13 @@ async function loadProjects() {
 }
 onMounted(loadProjects)
 function newTask(statusId) {
+  if (movendoTarefa.value || arrastandoTarefa.value) return
   if (loading.value || openingTask.value || tarefaStore.loading || !selectedProject.value) return
   tarefaStore.resetTarefa(Number(selectedProject.value), statusId)
   showModal.value = true
 }
 async function openTask(taskId) {
+  if (movendoTarefa.value || arrastandoTarefa.value) return
   if (loading.value || openingTask.value || showModal.value || !selectedProject.value) return
   const projectId = selectedProject.value
   const current = request
@@ -191,7 +202,41 @@ async function saved() {
   await buscarTarefas()
 }
 
+async function moverTarefa({ tarefaId, statusId }) {
+  if (arrasteDesabilitado.value || !selectedProject.value) return
+  const tarefa = tarefaStore.tarefas.find((item) => item.id === tarefaId)
+  const coluna = statusStore.statuses.find((item) => item.id === statusId)
+  if (!tarefa || !coluna || (tarefa.status?.id ?? tarefa.status) === statusId) return
+
+  const tarefaAnterior = { ...tarefa }
+  const projetoId = selectedProject.value
+  const atual = request
+  clearTimeout(tempoBusca)
+  movendoTarefa.value = true
+  taskError.value = ''
+  notice.value = ''
+  // Move o card imediatamente enquanto o backend salva o novo status.
+  tarefaStore.tarefas = tarefaStore.tarefas.map((item) =>
+    item.id === tarefaId ? { ...item, status: statusId } : item,
+  )
+  try {
+    await tarefaStore.updateTarefa(tarefaId, projetoId, { status: statusId })
+    if (atual !== request) return
+    notice.value = `Tarefa movida para ${coluna.nome}.`
+    await buscarTarefas()
+  } catch (erro) {
+    if (atual !== request) return
+    tarefaStore.tarefas = tarefaStore.tarefas.map((item) =>
+      item.id === tarefaId ? tarefaAnterior : item,
+    )
+    taskError.value = apiErrorMessage(erro, 'Não foi possível mover a tarefa. Tente novamente.')
+  } finally {
+    movendoTarefa.value = false
+  }
+}
+
 function novaColuna() {
+  if (movendoTarefa.value || arrastandoTarefa.value) return
   if (!selectedProject.value || loading.value || statusStore.alterandoColuna) return
   if (!podeAdicionarColuna.value) return
   colunaSelecionada.value = null
@@ -199,12 +244,14 @@ function novaColuna() {
 }
 
 function editarColuna(id) {
+  if (movendoTarefa.value || arrastandoTarefa.value) return
   if (loading.value || statusStore.alterandoColuna) return
   colunaSelecionada.value = statusStore.statuses.find((coluna) => coluna.id === id)
   if (colunaSelecionada.value) mostrarModalColuna.value = true
 }
 
 function confirmarExclusaoColuna(id) {
+  if (movendoTarefa.value || arrastandoTarefa.value) return
   if (loading.value || statusStore.alterandoColuna) return
   if (!podeExcluirColuna.value) return
   erroColuna.value = ''
@@ -271,6 +318,8 @@ async function excluirColuna() {
             showModal ||
             mostrarModalColuna ||
             Boolean(colunaExcluir) ||
+            movendoTarefa ||
+            arrastandoTarefa ||
             statusStore.alterandoColuna ||
             statusStore.loading
           "
@@ -289,7 +338,7 @@ async function excluirColuna() {
       @limpar="tarefaStore.limparFiltros"
       :categorias="categoriaStore.categoriasOrdenadas"
       :usuarios="projetoStore.participantes"
-      :desabilitado="!selectedProject || loading"
+      :desabilitado="!selectedProject || loading || movendoTarefa || arrastandoTarefa"
     />
     <div v-if="selectedProject && !loading" class="column-limit">
       <div class="column-summary">
@@ -299,7 +348,7 @@ async function excluirColuna() {
       <AppButton
         class="add-column-button"
         variant="secondary"
-        :disabled="!podeAdicionarColuna || statusStore.alterandoColuna"
+        :disabled="!podeAdicionarColuna || statusStore.alterandoColuna || movendoTarefa || arrastandoTarefa"
         @click="novaColuna"
       >
         <span class="mdi mdi-plus" aria-hidden="true" /> Adicionar coluna
@@ -326,12 +375,16 @@ async function excluirColuna() {
       :kaban-categories="kabanCategories"
       :tasks="tasks"
       :pode-excluir="podeExcluirColuna"
-      :desabilitado="statusStore.alterandoColuna"
+      :desabilitado="statusStore.alterandoColuna || movendoTarefa || arrastandoTarefa"
+      :arraste-desabilitado="arrasteDesabilitado"
       @add-task="newTask"
       @open-task="openTask"
       @edit-column="editarColuna"
       @delete-column="confirmarExclusaoColuna"
+      @move-task="moverTarefa"
+      @drag-state="arrastandoTarefa = $event"
     />
+    <p v-if="movendoTarefa" role="status">Salvando nova coluna da tarefa…</p>
     <p v-if="openingTask" role="status">Carregando tarefa…</p>
     <p v-if="taskError" role="alert">{{ taskError }}</p>
     <p v-if="erroColuna && !colunaExcluir" role="alert">

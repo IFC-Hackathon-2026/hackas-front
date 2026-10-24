@@ -7,21 +7,45 @@ const props = defineProps({
   endDate: String,
   categorias: Array,
   prioridade: String,
+  atrasada: Boolean,
+  concluidoEm: String,
 });
+
+function formatarData(data) {
+  if (/^\d{4}-\d{2}-\d{2}$/.test(data)) return data.split('-').reverse().join('/');
+  return new Date(data).toLocaleDateString('pt-BR');
+}
 
 </script>
 
 <template>
   <div class="list-container">
-    <div class="task-card">
-      <span class="mdi mdi-drag-vertical" style="font-size: 1.3rem; color: #9a9a9a;" />
+    <div class="task-card" :class="{ 'task-card-atrasada': props.atrasada && !props.concluidoEm }">
+      <span
+        class="mdi mdi-drag-vertical task-drag-handle"
+        title="Arraste para mover a tarefa"
+        aria-hidden="true"
+        @click.stop
+      />
       <div class="container">
         <div class="date-area">
           <span class="mdi mdi-calendar-outline" />{{ props.startDate }}
           -
           <span class="mdi mdi-calendar-outline" />{{ props.endDate }}
         </div>
-        <h4 style="font-weight: 600;">{{ props.title }}</h4>
+        <h4 class="task-title">
+          {{ props.title }}
+          <span
+            v-if="props.atrasada && !props.concluidoEm"
+            class="mdi mdi-alert-circle task-alert"
+            role="img"
+            aria-label="Tarefa atrasada"
+            title="Tarefa atrasada"
+          />
+        </h4>
+        <p v-if="props.concluidoEm" class="task-completed">
+          Concluído em: {{ formatarData(props.concluidoEm) }}
+        </p>
         <ul class="task-infos">
           <li v-for="categoria in props.categorias" :key="categoria.id" class="task-tag">
             <span class="color-dot" :style="{ backgroundColor: categoria.cor }" />
@@ -40,6 +64,35 @@ const props = defineProps({
 <style scoped>
 .container {
   min-width: 0;
+}
+
+.task-drag-handle {
+  font-size: 1.3rem;
+  color: #9a9a9a;
+  cursor: grab;
+  touch-action: none;
+}
+
+.task-drag-handle:active {
+  cursor: grabbing;
+}
+
+.task-title {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-weight: 600;
+}
+
+.task-alert {
+  flex-shrink: 0;
+  color: #b91c1c;
+}
+
+.task-completed {
+  margin-top: 0.25rem;
+  color: #777;
+  font-size: 0.8rem;
 }
 
 .task-infos {
@@ -90,6 +143,10 @@ const props = defineProps({
   gap: 0.5rem;
   cursor: pointer;
   transition: all .3s ease;
+}
+
+.task-card-atrasada {
+  border-color: #b91c1c;
 }
 
 .task-card:hover {

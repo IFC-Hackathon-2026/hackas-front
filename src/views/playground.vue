@@ -5,10 +5,11 @@ import { useUserStore } from '@/stores/userStore'
 import { useProjetoStore } from '@/stores/projetoStore'
 import { useStatusStore } from '@/stores/statusStore'
 import { useCategoriaStore } from '@/stores/categoriaStore'
+import { PROJECT_CATEGORIES } from '@/constants/projectCategories'
 import { useTarefaStore } from '@/stores/tarefaStore'
+import { useComentarioStore } from '@/stores/comentarioStore'
 import { useDocumentoStore } from '@/stores/documentoStore'
 import { usePedidoParticipacaoStore } from '@/stores/pedidoParticipacaoStore'
-import KanbanBoard from '@/components/kanban/KanbanBoard.vue'
 
 defineOptions({ name: 'ApiPlayground' })
 
@@ -17,9 +18,10 @@ const projetoStore = useProjetoStore()
 const statusStore = useStatusStore()
 const categoriaStore = useCategoriaStore()
 const tarefaStore = useTarefaStore()
+const comentarioStore = useComentarioStore()
 const documentoStore = useDocumentoStore()
 const pedidoStore = usePedidoParticipacaoStore()
-const projetoForm = reactive({ nome: '', descricao: '' })
+const projetoForm = reactive({ nome: '', descricao: '', categorias: [] })
 const projetoFiltros = reactive({ search: '', meus: true, page: 1 })
 const projetoId = ref('')
 const projetoPhoto = ref(null)
@@ -31,6 +33,8 @@ const tarefaForm = reactive({
 const statusSelecionadoId = ref('')
 const categoriaSelecionadaId = ref('')
 const tarefaSelecionadaId = ref('')
+const comentarioSelecionadoId = ref('')
+const comentarioForm = reactive({ conteudo: '' })
 const somenteTarefasAtrasadas = ref(false)
 const documentoSelecionadoId = ref('')
 const documentoArquivo = ref(null)
@@ -44,6 +48,10 @@ const projetoSelecionadoId = computed(() => projetoStore.projetoAtual?.id ?? nul
 async function carregarDadosProjeto() {
   const id = projetoSelecionadoId.value
   if (!id) throw new Error('Selecione um projeto primeiro.')
+  tarefaSelecionadaId.value = ''
+  comentarioSelecionadoId.value = ''
+  comentarioForm.conteudo = ''
+  comentarioStore.reset()
   const resultado = await run(
     () => Promise.all([
       statusStore.getStatuses(id),
@@ -52,6 +60,7 @@ async function carregarDadosProjeto() {
         page_size: 100,
         atrasadas: somenteTarefasAtrasadas.value ? 'true' : undefined,
       }),
+      tarefaStore.getTarefasAtrasadas(id, { page_size: 100 }),
       documentoStore.getDocumentos(id, { page_size: 100 }),
     ]),
     'Status, categorias, tarefas e documentos carregados.',
@@ -134,7 +143,7 @@ async function salvarTarefa(criar) {
     criar ? 'Tarefa criada.' : 'Tarefa atualizada.',
   )
   if (tarefa) {
-    selecionarTarefa(tarefa)
+    await selecionarTarefa(tarefa)
     await Promise.all([
       projetoStore.getProjeto(projetoId),
       userStore.getMe(),
@@ -143,23 +152,81 @@ async function salvarTarefa(criar) {
 }
 
 async function selecionarTarefa(tarefa) {
-  const detalhe = tarefa.descricao === undefined
+  const tarefaCompleta = tarefa.descricao === undefined
     ? await run(
       () => tarefaStore.getTarefa(tarefa.id, projetoSelecionadoId.value),
-      `Detalhes da tarefa ${tarefa.id} carregados.`,
+      'Detalhes da tarefa carregados.',
     )
     : tarefa
-  if (!detalhe) return
-  tarefaSelecionadaId.value = tarefa.id
+  if (!tarefaCompleta) return
+  tarefaSelecionadaId.value = tarefaCompleta.id
   Object.assign(tarefaForm, {
-    titulo: detalhe.titulo ?? '',
-    descricao: detalhe.descricao ?? '',
-    prioridade: detalhe.prioridade ?? 'media',
-    status: typeof detalhe.status === 'object' ? detalhe.status.id : detalhe.status,
-    prazo: detalhe.prazo ? detalhe.prazo.slice(0, 16) : '',
-    categoria: (detalhe.categoria ?? []).map((item) => typeof item === 'object' ? item.id : item),
-    responsavel: (detalhe.responsavel ?? []).map((item) => typeof item === 'object' ? item.id : item),
+    titulo: tarefaCompleta.titulo ?? '',
+    descricao: tarefaCompleta.descricao ?? '',
+    prioridade: tarefaCompleta.prioridade ?? 'media',
+    status: typeof tarefaCompleta.status === 'object' ? tarefaCompleta.status.id : tarefaCompleta.status,
+    prazo: tarefaCompleta.prazo ? tarefaCompleta.prazo.slice(0, 16) : '',
+    categoria: (tarefaCompleta.categoria ?? []).map((item) => typeof item === 'object' ? item.id : item),
+    responsavel: (tarefaCompleta.responsavel ?? []).map((item) => typeof item === 'object' ? item.id : item),
   })
+  comentarioSelecionadoId.value = ''
+  comentarioForm.conteudo = ''
+  await run(
+    () => comentarioStore.getComentarios(tarefaCompleta.id, { page_size: 100 }),
+    'Tarefa e comentários carregados.',
+  )
+}
+
+function selecionarComentario(comentario) {
+  comentarioStore.selecionarComentario(comentario)
+  comentarioSelecionadoId.value = comentario.id
+  comentarioForm.conteudo = comentario.conteudo
+}
+
+function cancelarEdicaoComentario() {
+  comentarioSelecionadoId.value = ''
+  comentarioForm.conteudo = ''
+  comentarioStore.selecionarComentario(null)
+}
+
+function podeAlterarComentario(comentario) {
+  return String(comentario.autor?.id) === String(userStore.user?.id)
+}
+
+async function salvarComentario(criar) {
+  const comentario = await run(
+    () => criar
+      ? comentarioStore.createComentario(tarefaSelecionadaId.value, comentarioForm)
+      : comentarioStore.updateComentario(
+        comentarioSelecionadoId.value,
+        tarefaSelecionadaId.value,
+        comentarioForm,
+      ),
+    criar ? 'Comentário publicado.' : 'Comentário atualizado.',
+  )
+  if (comentario) cancelarEdicaoComentario()
+}
+
+async function excluirComentario(comentario) {
+  if (!window.confirm('Excluir este comentário?')) return
+  const excluido = await run(
+    () => comentarioStore.deleteComentario(comentario.id, tarefaSelecionadaId.value),
+    'Comentário excluído.',
+  )
+  if (excluido !== null && comentarioSelecionadoId.value === comentario.id) {
+    cancelarEdicaoComentario()
+  }
+}
+
+async function carregarTarefasAtrasadas() {
+  await run(
+    () => tarefaStore.getTarefasAtrasadas(projetoSelecionadoId.value, { page_size: 100 }),
+    'Tarefas atrasadas carregadas.',
+  )
+}
+
+function nomeSituacao(situacao) {
+  return { pendente: 'Pendente', atrasada: 'Atrasada', concluida: 'Concluída' }[situacao] ?? situacao
 }
 
 async function excluirTarefa() {
@@ -174,6 +241,8 @@ async function excluirTarefa() {
     ])
   }
   tarefaSelecionadaId.value = ''
+  comentarioStore.reset()
+  cancelarEdicaoComentario()
 }
 
 async function listarDocumentos() {
@@ -305,6 +374,7 @@ async function consultarProjeto(id = projetoId.value) {
     projetoId.value = projeto.id
     projetoForm.nome = projeto.nome
     projetoForm.descricao = projeto.descricao
+    projetoForm.categorias = [...(projeto.categorias ?? [])]
     await carregarDadosProjeto()
   }
 }
@@ -327,6 +397,7 @@ async function excluirProjeto() {
     projetoId.value = ''
     projetoForm.nome = ''
     projetoForm.descricao = ''
+    projetoForm.categorias = []
   }, 'Projeto excluído.')
 }
 
@@ -421,6 +492,7 @@ async function login() {
     statusStore.reset()
     categoriaStore.reset()
     tarefaStore.reset()
+    comentarioStore.reset()
     documentoStore.reset()
     return userStore.login(loginForm.email, loginForm.password)
   },
@@ -495,6 +567,7 @@ function logout() {
   statusStore.reset()
   categoriaStore.reset()
   tarefaStore.reset()
+  comentarioStore.reset()
   documentoStore.reset()
   pedidoStore.reset()
   selectedUser.value = null
@@ -505,7 +578,6 @@ function logout() {
 
 <template>
   <main class="playground">
-    <KanbanBoard />
     <header class="page-header">
       <div>
         <p class="eyebrow">Farol Flow</p>
@@ -698,6 +770,36 @@ function logout() {
           <form @submit.prevent="salvarProjeto(true)">
             <label>Nome<input v-model="projetoForm.nome" maxlength="150" required /></label>
             <label>Descrição<textarea v-model="projetoForm.descricao" rows="4"></textarea></label>
+            <fieldset class="category-picker">
+              <legend>Filtros fixos do projeto</legend>
+              <p><code>categorias</code> define em quais filtros o projeto aparece.</p>
+              <template v-for="categoria in PROJECT_CATEGORIES" :key="categoria.value">
+                <div v-if="categoria.selectable === false" class="checkbox-label" :style="{ backgroundColor: categoria.color }">
+                  <strong>{{ categoria.label }}</strong>
+                </div>
+                <label v-else class="checkbox-label" :style="{ backgroundColor: categoria.color }">
+                  <input v-model="projetoForm.categorias" type="checkbox" :value="categoria.value" />
+                  {{ categoria.label }}
+                </label>
+                <template
+                  v-for="subcategoria in categoria.children"
+                  :key="subcategoria.value"
+                >
+                  <label class="checkbox-label category-child" :style="subcategoria.color ? { backgroundColor: subcategoria.color } : null">
+                    <input v-model="projetoForm.categorias" type="checkbox" :value="subcategoria.value" />
+                    {{ subcategoria.label }}
+                  </label>
+                  <label
+                    v-for="item in subcategoria.children"
+                    :key="item.value"
+                    class="checkbox-label category-grandchild"
+                  >
+                    <input v-model="projetoForm.categorias" type="checkbox" :value="item.value" />
+                    {{ item.label }}
+                  </label>
+                </template>
+              </template>
+            </fieldset>
             <button>Criar novo projeto</button>
             <button type="button" :disabled="!projetoStore.podeEditar || !projetoForm.nome.trim()" @click="salvarProjeto(false)">Salvar no projeto selecionado</button>
           </form>
@@ -911,7 +1013,7 @@ function logout() {
 
         <section class="card card-wide">
           <h3>Tarefas</h3>
-          <p><code>GET/POST/PATCH/DELETE /tarefas/</code></p>
+          <p><code>GET/POST/PATCH/DELETE /tarefas/</code> · <code>GET /tarefas/atrasadas/</code></p>
           <form class="inline-form" @submit.prevent="listarTarefas">
             <label class="checkbox-label">
               <input v-model="somenteTarefasAtrasadas" type="checkbox" /> Somente atrasadas
@@ -956,21 +1058,89 @@ function logout() {
 
           <div class="table-wrapper spaced">
             <table>
-              <thead><tr><th>ID</th><th>Título</th><th>Prioridade</th><th>Criada em</th><th>Prazo</th><th>Categorias</th><th>Ação</th></tr></thead>
+              <thead><tr><th>ID</th><th>Título</th><th>Prioridade</th><th>Situação</th><th>Criada em</th><th>Prazo</th><th>Categorias</th><th>Ação</th></tr></thead>
               <tbody>
                 <tr v-for="tarefa in tarefaStore.tarefas" :key="tarefa.id">
                   <td>{{ tarefa.id }}</td>
                   <td>{{ tarefa.titulo }}</td>
                   <td>{{ tarefa.prioridade }}</td>
+                  <td>{{ nomeSituacao(tarefa.situacao) }}</td>
                   <td>{{ new Date(tarefa.criado_em).toLocaleString('pt-BR') }}</td>
                   <td>{{ tarefa.prazo ? new Date(tarefa.prazo).toLocaleString('pt-BR') : 'Sem prazo' }}</td>
                   <td>{{ tarefa.categoria?.join(', ') || 'Sem categoria' }}</td>
                   <td><button type="button" class="small" @click="selecionarTarefa(tarefa)">Selecionar</button></td>
                 </tr>
-                <tr v-if="!tarefaStore.tarefas.length"><td colspan="7">Nenhuma tarefa carregada.</td></tr>
+                <tr v-if="!tarefaStore.tarefas.length"><td colspan="8">Nenhuma tarefa carregada.</td></tr>
               </tbody>
             </table>
           </div>
+          <div class="card-heading spaced">
+            <div>
+              <h4>Tarefas atrasadas</h4>
+              <p>Total: {{ tarefaStore.totalAtrasadas }}</p>
+            </div>
+            <button type="button" @click="carregarTarefasAtrasadas">Carregar atrasadas</button>
+          </div>
+          <ul class="select-list">
+            <li v-for="tarefa in tarefaStore.tarefasAtrasadas" :key="tarefa.id">
+              <button type="button" class="item-button" @click="selecionarTarefa(tarefa)">
+                {{ tarefa.titulo }} — prazo {{ new Date(tarefa.prazo).toLocaleString('pt-BR') }}
+              </button>
+            </li>
+            <li v-if="!tarefaStore.tarefasAtrasadas.length">Nenhuma tarefa atrasada.</li>
+          </ul>
+          <section v-if="tarefaSelecionadaId" class="comments-panel spaced" aria-labelledby="comentarios-title">
+            <div class="card-heading">
+              <div>
+                <h4 id="comentarios-title">Comentários da tarefa</h4>
+                <p><code>GET/POST/PATCH/DELETE /comentarios/?tarefa={{ tarefaSelecionadaId }}</code></p>
+              </div>
+              <span>{{ comentarioStore.total }} comentário(s)</span>
+            </div>
+
+            <form class="comment-form" @submit.prevent="salvarComentario(!comentarioSelecionadoId)">
+              <label>
+                {{ comentarioSelecionadoId ? 'Editar seu comentário' : 'Adicionar comentário' }}
+                <textarea
+                  v-model="comentarioForm.conteudo"
+                  rows="4"
+                  maxlength="5000"
+                  placeholder="Escreva uma atualização, dúvida ou observação sobre a tarefa..."
+                  required
+                ></textarea>
+              </label>
+              <div class="inline-form">
+                <button :disabled="!comentarioForm.conteudo.trim()">
+                  {{ comentarioSelecionadoId ? 'Salvar edição' : 'Publicar comentário' }}
+                </button>
+                <button
+                  v-if="comentarioSelecionadoId"
+                  type="button"
+                  class="secondary"
+                  @click="cancelarEdicaoComentario"
+                >Cancelar edição</button>
+              </div>
+            </form>
+
+            <p v-if="comentarioStore.loading">Carregando comentários...</p>
+            <div v-else class="comment-list">
+              <article v-for="comentario in comentarioStore.comentarios" :key="comentario.id" class="comment-item">
+                <header>
+                  <strong>{{ comentario.autor?.name || comentario.autor?.email }}</strong>
+                  <span>
+                    {{ new Date(comentario.criado_em).toLocaleString('pt-BR') }}
+                    <template v-if="comentario.atualizado_em !== comentario.criado_em"> · editado</template>
+                  </span>
+                </header>
+                <p>{{ comentario.conteudo }}</p>
+                <div v-if="podeAlterarComentario(comentario)" class="inline-form">
+                  <button type="button" class="small" @click="selecionarComentario(comentario)">Editar</button>
+                  <button type="button" class="small danger" @click="excluirComentario(comentario)">Excluir</button>
+                </div>
+              </article>
+              <p v-if="!comentarioStore.comentarios.length">Nenhum comentário nesta tarefa.</p>
+            </div>
+          </section>
           <pre v-if="tarefaStore.tarefaAtual">{{ JSON.stringify(tarefaStore.tarefaAtual, null, 2) }}</pre>
         </section>
       </fieldset>
@@ -1119,7 +1289,7 @@ function logout() {
 .card > p { margin-bottom: 1rem; color: #667085; }
 
 form, .photo-update { display: grid; gap: 0.8rem; }
-.inline-form { display: flex; align-items: end; }
+.inline-form { display: flex; align-items: end; gap: 0.5rem; }
 .spaced, .photo-update { margin-top: 1rem; }
 label { display: grid; gap: 0.3rem; font-weight: 600; }
 input, textarea, select {
@@ -1133,6 +1303,8 @@ input, textarea, select {
 .project-controls .card { min-width: 0; }
 .checkbox-label { display: flex; align-items: center; }
 .checkbox-label input { width: auto; }
+.category-child { margin-left: 1.5rem; }
+.category-grandchild { margin-left: 3rem; }
 .project-photo { max-width: 100%; max-height: 180px; object-fit: contain; margin-top: 1rem; }
 .choices { display: flex; flex-wrap: wrap; gap: 0.75rem; padding: 0.8rem; border: 1px solid #dfe3ea; border-radius: 7px; }
 .select-list { display: grid; gap: 0.4rem; margin-top: 1rem; }
@@ -1151,6 +1323,33 @@ button:hover { background: var(--azul-claro); }
 button:disabled { opacity: 0.55; cursor: not-allowed; }
 button.danger { background: #a92a2a; }
 button.small { padding: 0.4rem 0.7rem; }
+button.secondary { color: var(--primaria); background: #e9eef5; }
+
+.comments-panel {
+  padding: 1rem;
+  border: 1px solid #d0d7de;
+  border-radius: 8px;
+  background: #f6f8fa;
+}
+.comment-form { margin-block: 1rem; }
+.comment-list { display: grid; gap: 0.75rem; }
+.comment-item {
+  overflow: hidden;
+  border: 1px solid #d0d7de;
+  border-radius: 8px;
+  background: white;
+}
+.comment-item header {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.65rem 0.8rem;
+  border-bottom: 1px solid #d8dee4;
+  background: #f6f8fa;
+}
+.comment-item header span { color: #667085; font-size: 0.85rem; }
+.comment-item > p { padding: 0.8rem; white-space: pre-wrap; overflow-wrap: anywhere; }
+.comment-item > .inline-form { padding: 0 0.8rem 0.8rem; }
 
 .profile { justify-content: flex-start; margin: 1rem 0; }
 .profile img, .avatar {
