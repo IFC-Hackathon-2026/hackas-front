@@ -5,6 +5,7 @@ import { useUserStore } from '@/stores/userStore'
 import { useProjetoStore } from '@/stores/projetoStore'
 import { useStatusStore } from '@/stores/statusStore'
 import { useCategoriaStore } from '@/stores/categoriaStore'
+import { PROJECT_CATEGORIES } from '@/constants/projectCategories'
 import { useTarefaStore } from '@/stores/tarefaStore'
 import { useDocumentoStore } from '@/stores/documentoStore'
 import { usePedidoParticipacaoStore } from '@/stores/pedidoParticipacaoStore'
@@ -19,7 +20,7 @@ const categoriaStore = useCategoriaStore()
 const tarefaStore = useTarefaStore()
 const documentoStore = useDocumentoStore()
 const pedidoStore = usePedidoParticipacaoStore()
-const projetoForm = reactive({ nome: '', descricao: '' })
+const projetoForm = reactive({ nome: '', descricao: '', categorias: [] })
 const projetoFiltros = reactive({ search: '', meus: true, page: 1 })
 const projetoId = ref('')
 const projetoPhoto = ref(null)
@@ -52,6 +53,7 @@ async function carregarDadosProjeto() {
         page_size: 100,
         atrasadas: somenteTarefasAtrasadas.value ? 'true' : undefined,
       }),
+      tarefaStore.getTarefasAtrasadas(id, { page_size: 100 }),
       documentoStore.getDocumentos(id, { page_size: 100 }),
     ]),
     'Status, categorias, tarefas e documentos carregados.',
@@ -143,23 +145,34 @@ async function salvarTarefa(criar) {
 }
 
 async function selecionarTarefa(tarefa) {
-  const detalhe = tarefa.descricao === undefined
+  const tarefaCompleta = tarefa.descricao === undefined
     ? await run(
       () => tarefaStore.getTarefa(tarefa.id, projetoSelecionadoId.value),
-      `Detalhes da tarefa ${tarefa.id} carregados.`,
+      'Detalhes da tarefa carregados.',
     )
     : tarefa
-  if (!detalhe) return
-  tarefaSelecionadaId.value = tarefa.id
+  if (!tarefaCompleta) return
+  tarefaSelecionadaId.value = tarefaCompleta.id
   Object.assign(tarefaForm, {
-    titulo: detalhe.titulo ?? '',
-    descricao: detalhe.descricao ?? '',
-    prioridade: detalhe.prioridade ?? 'media',
-    status: typeof detalhe.status === 'object' ? detalhe.status.id : detalhe.status,
-    prazo: detalhe.prazo ? detalhe.prazo.slice(0, 16) : '',
-    categoria: (detalhe.categoria ?? []).map((item) => typeof item === 'object' ? item.id : item),
-    responsavel: (detalhe.responsavel ?? []).map((item) => typeof item === 'object' ? item.id : item),
+    titulo: tarefaCompleta.titulo ?? '',
+    descricao: tarefaCompleta.descricao ?? '',
+    prioridade: tarefaCompleta.prioridade ?? 'media',
+    status: typeof tarefaCompleta.status === 'object' ? tarefaCompleta.status.id : tarefaCompleta.status,
+    prazo: tarefaCompleta.prazo ? tarefaCompleta.prazo.slice(0, 16) : '',
+    categoria: (tarefaCompleta.categoria ?? []).map((item) => typeof item === 'object' ? item.id : item),
+    responsavel: (tarefaCompleta.responsavel ?? []).map((item) => typeof item === 'object' ? item.id : item),
   })
+}
+
+async function carregarTarefasAtrasadas() {
+  await run(
+    () => tarefaStore.getTarefasAtrasadas(projetoSelecionadoId.value, { page_size: 100 }),
+    'Tarefas atrasadas carregadas.',
+  )
+}
+
+function nomeSituacao(situacao) {
+  return { pendente: 'Pendente', atrasada: 'Atrasada', concluida: 'Concluída' }[situacao] ?? situacao
 }
 
 async function excluirTarefa() {
@@ -305,6 +318,7 @@ async function consultarProjeto(id = projetoId.value) {
     projetoId.value = projeto.id
     projetoForm.nome = projeto.nome
     projetoForm.descricao = projeto.descricao
+    projetoForm.categorias = [...(projeto.categorias ?? [])]
     await carregarDadosProjeto()
   }
 }
@@ -327,6 +341,7 @@ async function excluirProjeto() {
     projetoId.value = ''
     projetoForm.nome = ''
     projetoForm.descricao = ''
+    projetoForm.categorias = []
   }, 'Projeto excluído.')
 }
 
@@ -698,6 +713,36 @@ function logout() {
           <form @submit.prevent="salvarProjeto(true)">
             <label>Nome<input v-model="projetoForm.nome" maxlength="150" required /></label>
             <label>Descrição<textarea v-model="projetoForm.descricao" rows="4"></textarea></label>
+            <fieldset class="category-picker">
+              <legend>Filtros fixos do projeto</legend>
+              <p><code>categorias</code> define em quais filtros o projeto aparece.</p>
+              <template v-for="categoria in PROJECT_CATEGORIES" :key="categoria.value">
+                <div v-if="categoria.selectable === false" class="checkbox-label" :style="{ backgroundColor: categoria.color }">
+                  <strong>{{ categoria.label }}</strong>
+                </div>
+                <label v-else class="checkbox-label" :style="{ backgroundColor: categoria.color }">
+                  <input v-model="projetoForm.categorias" type="checkbox" :value="categoria.value" />
+                  {{ categoria.label }}
+                </label>
+                <template
+                  v-for="subcategoria in categoria.children"
+                  :key="subcategoria.value"
+                >
+                  <label class="checkbox-label category-child" :style="subcategoria.color ? { backgroundColor: subcategoria.color } : null">
+                    <input v-model="projetoForm.categorias" type="checkbox" :value="subcategoria.value" />
+                    {{ subcategoria.label }}
+                  </label>
+                  <label
+                    v-for="item in subcategoria.children"
+                    :key="item.value"
+                    class="checkbox-label category-grandchild"
+                  >
+                    <input v-model="projetoForm.categorias" type="checkbox" :value="item.value" />
+                    {{ item.label }}
+                  </label>
+                </template>
+              </template>
+            </fieldset>
             <button>Criar novo projeto</button>
             <button type="button" :disabled="!projetoStore.podeEditar || !projetoForm.nome.trim()" @click="salvarProjeto(false)">Salvar no projeto selecionado</button>
           </form>
@@ -911,7 +956,7 @@ function logout() {
 
         <section class="card card-wide">
           <h3>Tarefas</h3>
-          <p><code>GET/POST/PATCH/DELETE /tarefas/</code></p>
+          <p><code>GET/POST/PATCH/DELETE /tarefas/</code> · <code>GET /tarefas/atrasadas/</code></p>
           <form class="inline-form" @submit.prevent="listarTarefas">
             <label class="checkbox-label">
               <input v-model="somenteTarefasAtrasadas" type="checkbox" /> Somente atrasadas
@@ -956,21 +1001,37 @@ function logout() {
 
           <div class="table-wrapper spaced">
             <table>
-              <thead><tr><th>ID</th><th>Título</th><th>Prioridade</th><th>Criada em</th><th>Prazo</th><th>Categorias</th><th>Ação</th></tr></thead>
+              <thead><tr><th>ID</th><th>Título</th><th>Prioridade</th><th>Situação</th><th>Criada em</th><th>Prazo</th><th>Categorias</th><th>Ação</th></tr></thead>
               <tbody>
                 <tr v-for="tarefa in tarefaStore.tarefas" :key="tarefa.id">
                   <td>{{ tarefa.id }}</td>
                   <td>{{ tarefa.titulo }}</td>
                   <td>{{ tarefa.prioridade }}</td>
+                  <td>{{ nomeSituacao(tarefa.situacao) }}</td>
                   <td>{{ new Date(tarefa.criado_em).toLocaleString('pt-BR') }}</td>
                   <td>{{ tarefa.prazo ? new Date(tarefa.prazo).toLocaleString('pt-BR') : 'Sem prazo' }}</td>
                   <td>{{ tarefa.categoria?.join(', ') || 'Sem categoria' }}</td>
                   <td><button type="button" class="small" @click="selecionarTarefa(tarefa)">Selecionar</button></td>
                 </tr>
-                <tr v-if="!tarefaStore.tarefas.length"><td colspan="7">Nenhuma tarefa carregada.</td></tr>
+                <tr v-if="!tarefaStore.tarefas.length"><td colspan="8">Nenhuma tarefa carregada.</td></tr>
               </tbody>
             </table>
           </div>
+          <div class="card-heading spaced">
+            <div>
+              <h4>Tarefas atrasadas</h4>
+              <p>Total: {{ tarefaStore.totalAtrasadas }}</p>
+            </div>
+            <button type="button" @click="carregarTarefasAtrasadas">Carregar atrasadas</button>
+          </div>
+          <ul class="select-list">
+            <li v-for="tarefa in tarefaStore.tarefasAtrasadas" :key="tarefa.id">
+              <button type="button" class="item-button" @click="selecionarTarefa(tarefa)">
+                {{ tarefa.titulo }} — prazo {{ new Date(tarefa.prazo).toLocaleString('pt-BR') }}
+              </button>
+            </li>
+            <li v-if="!tarefaStore.tarefasAtrasadas.length">Nenhuma tarefa atrasada.</li>
+          </ul>
           <pre v-if="tarefaStore.tarefaAtual">{{ JSON.stringify(tarefaStore.tarefaAtual, null, 2) }}</pre>
         </section>
       </fieldset>
@@ -1133,6 +1194,8 @@ input, textarea, select {
 .project-controls .card { min-width: 0; }
 .checkbox-label { display: flex; align-items: center; }
 .checkbox-label input { width: auto; }
+.category-child { margin-left: 1.5rem; }
+.category-grandchild { margin-left: 3rem; }
 .project-photo { max-width: 100%; max-height: 180px; object-fit: contain; margin-top: 1rem; }
 .choices { display: flex; flex-wrap: wrap; gap: 0.75rem; padding: 0.8rem; border: 1px solid #dfe3ea; border-radius: 7px; }
 .select-list { display: grid; gap: 0.4rem; margin-top: 1rem; }

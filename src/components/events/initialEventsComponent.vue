@@ -1,5 +1,67 @@
 <script setup>
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import AppInput from '../forms/AppInput.vue';
+import { PROJECT_CATEGORIES, PROJECT_CATEGORY_LABELS } from '@/constants/projectCategories'
+import { useProjetoStore } from '@/stores/projetoStore'
+
+const projetoStore = useProjetoStore()
+const buscaProjeto = ref('')
+const buscaCategoria = ref('')
+const categoriasSelecionadas = ref([])
+let buscaTimer
+
+function filtrarArvore(categorias, termo) {
+  return categorias
+    .map((categoria) => {
+      const corresponde = categoria.label.toLocaleLowerCase('pt-BR').includes(termo)
+      return {
+        ...categoria,
+        children: corresponde
+          ? categoria.children
+          : filtrarArvore(categoria.children ?? [], termo),
+      }
+    })
+    .filter((categoria) =>
+      categoria.label.toLocaleLowerCase('pt-BR').includes(termo)
+      || categoria.children.length,
+    )
+}
+
+const categoriasFiltradas = computed(() => {
+  const termo = buscaCategoria.value.trim().toLocaleLowerCase('pt-BR')
+  if (!termo) return PROJECT_CATEGORIES
+  return filtrarArvore(PROJECT_CATEGORIES, termo)
+})
+
+const tituloFiltro = computed(() => {
+  const quantidade = categoriasSelecionadas.value.length
+  return quantidade ? `${quantidade} CATEGORIA${quantidade > 1 ? 'S' : ''}` : 'TODAS AS CATEGORIAS'
+})
+
+async function carregarProjetos() {
+  await projetoStore.getProjetos({
+    search: buscaProjeto.value.trim() || undefined,
+    categorias: categoriasSelecionadas.value.length
+      ? categoriasSelecionadas.value.join(',')
+      : undefined,
+    page_size: 100,
+  })
+}
+
+function limparCategorias() {
+  categoriasSelecionadas.value = []
+}
+
+watch([buscaProjeto, categoriasSelecionadas], () => {
+  window.clearTimeout(buscaTimer)
+  buscaTimer = window.setTimeout(carregarProjetos, 300)
+}, { deep: true })
+
+onMounted(async () => {
+  await carregarProjetos()
+})
+
+onBeforeUnmount(() => window.clearTimeout(buscaTimer))
 </script>
 
 <template>
@@ -11,53 +73,68 @@ import AppInput from '../forms/AppInput.vue';
 
     <div class="search-toolbar">
       <div class="search">
-        <AppInput label="Buscar eventos" type="search" placeholder="Buscar evento..." icon="mdi-magnify" />
+        <AppInput v-model="buscaProjeto" label="Buscar eventos" type="search" placeholder="Buscar evento..." icon="mdi-magnify" />
       </div>
 
       <details class="category-filter" open>
         <summary>
-          TODAS AS CATEGORIAS
+          {{ tituloFiltro }}
           <span class="mdi mdi-chevron-down" aria-hidden="true"></span>
         </summary>
 
         <div class="filter-panel">
-          <AppInput label="Buscar categorias" type="search" placeholder="Buscar..." icon="mdi-magnify" />
-
-<!-- filtro ta como exemplo, tem que puxar as categorias do back -->
+          <AppInput v-model="buscaCategoria" label="Buscar categorias" type="search" placeholder="Buscar categoria..." icon="mdi-magnify" />
  
           <fieldset>
             <legend class="visually-hidden">Categorias de eventos</legend>
-            <label class="category-option category-option--group">
-              <input type="checkbox" />
-              <span>Educacionais e Profissionais</span>
-            </label>
-            <div class="category-children">
-              <label class="category-option">
-                <input type="checkbox" />
-                <span>Acadêmicos</span>
+            <button v-if="categoriasSelecionadas.length" type="button" class="clear-filter" @click="limparCategorias">
+              Limpar seleção
+            </button>
+            <div v-for="categoria in categoriasFiltradas" :key="categoria.value" class="category-group">
+              <label class="category-option category-option--group" :style="{ color: categoria.textColor || categoria.color }">
+                <input v-model="categoriasSelecionadas" type="checkbox" :value="categoria.value" />
+                <span>{{ categoria.label }}</span>
               </label>
-              <label class="category-option">
-                <input type="checkbox" />
-                <span>Workshops</span>
-              </label>
-              <label class="category-option">
-                <input type="checkbox" />
-                <span>Palestras</span>
-              </label>
+              <div v-if="categoria.children.length" class="category-children">
+                <div v-for="subcategoria in categoria.children" :key="subcategoria.value">
+                  <label class="category-option">
+                    <input v-model="categoriasSelecionadas" type="checkbox" :value="subcategoria.value" />
+                    <span>{{ subcategoria.label }}</span>
+                  </label>
+                  <div v-if="subcategoria.children?.length" class="category-grandchildren">
+                    <label v-for="item in subcategoria.children" :key="item.value" class="category-option">
+                      <input v-model="categoriasSelecionadas" type="checkbox" :value="item.value" />
+                      <span>{{ item.label }}</span>
+                    </label>
+                  </div>
+                </div>
+              </div>
             </div>
-            <label class="category-option category-option--group">
-              <input type="checkbox" />
-              <span>Culturais</span>
-            </label>
-            <label class="category-option category-option--group">
-              <input type="checkbox" />
-              <span>Esportivos</span>
-            </label>
+            <p v-if="!categoriasFiltradas.length" class="empty-filter">Nenhuma categoria encontrada.</p>
           </fieldset>
 
 
         </div>
       </details>
+    </div>
+
+    <p v-if="projetoStore.loading" class="results-status">Carregando eventos...</p>
+    <p v-else-if="projetoStore.error" class="results-status results-status--error">Não foi possível carregar os eventos.</p>
+    <div v-else class="event-results" aria-live="polite">
+      <article v-for="projeto in projetoStore.projetos" :key="projeto.id" class="event-card">
+        <img v-if="projeto.foto?.url" :src="projeto.foto.url" :alt="`Imagem de ${projeto.nome}`" />
+        <div v-else class="event-placeholder" aria-hidden="true"></div>
+        <div class="event-card__content">
+          <div class="event-tags">
+            <span v-for="categoria in projeto.categorias" :key="categoria">
+              {{ PROJECT_CATEGORY_LABELS[categoria] ?? categoria }}
+            </span>
+          </div>
+          <h2>{{ projeto.nome }}</h2>
+          <p>{{ projeto.descricao || 'Sem descrição.' }}</p>
+        </div>
+      </article>
+      <p v-if="!projetoStore.projetos.length" class="results-status">Nenhum evento corresponde aos filtros.</p>
     </div>
   </section>
 </template>
@@ -121,6 +198,8 @@ import AppInput from '../forms/AppInput.vue';
 
 .category-filter {
   position: relative;
+  width: 320px;
+  max-width: 100%;
 }
 
 .category-filter summary {
@@ -153,7 +232,11 @@ import AppInput from '../forms/AppInput.vue';
   top: 100%;
   right: 0;
   z-index: 5;
-  width: 100%;
+  width: 320px;
+  max-width: 100%;
+  max-height: min(480px, 65dvh);
+  overflow-y: auto;
+  overflow-x: hidden;
   padding: 1rem;
   background: #fff;
   border-radius: 6px;
@@ -179,9 +262,17 @@ import AppInput from '../forms/AppInput.vue';
   padding-block: 0.375rem;
   font-size: 0.9375rem;
   cursor: pointer;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.category-option span {
+  min-width: 0;
 }
 
 .category-option--group {
+  padding-inline: 0.5rem;
+  border-radius: 4px;
   font-weight: 700;
 }
 
@@ -195,6 +286,97 @@ import AppInput from '../forms/AppInput.vue';
 
 .category-children {
   padding-left: 1.75rem;
+}
+
+.category-grandchildren {
+  padding-left: 1.75rem;
+}
+
+.clear-filter {
+  width: 100%;
+  padding: 0.35rem 0;
+  border: 0;
+  background: transparent;
+  color: var(--primaria, #00265c);
+  font: inherit;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+}
+
+.category-group + .category-group {
+  margin-top: 0.25rem;
+}
+
+.empty-filter,
+.results-status {
+  color: #5f6875;
+}
+
+.results-status {
+  margin-top: 2rem;
+  text-align: center;
+}
+
+.results-status--error {
+  color: #b42318;
+}
+
+.event-results {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 1.5rem;
+  margin-top: 2.5rem;
+}
+
+.event-card {
+  overflow: hidden;
+  background: #fff;
+  border: 1px solid #e1e5eb;
+  border-radius: 8px;
+  box-shadow: 0 4px 14px rgb(0 18 40 / 8%);
+}
+
+.event-card img,
+.event-placeholder {
+  display: block;
+  width: 100%;
+  height: 160px;
+  object-fit: cover;
+  background: #e9e9e9;
+}
+
+.event-card__content {
+  padding: 1rem;
+}
+
+.event-card__content h2 {
+  margin: 0.5rem 0;
+  font-size: 1.15rem;
+}
+
+.event-card__content p {
+  display: -webkit-box;
+  overflow: hidden;
+  margin: 0;
+  color: #4c5665;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+}
+
+.event-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.event-tags span {
+  padding: 0.2rem 0.5rem;
+  background: #e7f0fb;
+  border-radius: 999px;
+  color: var(--primaria, #00265c);
+  font-size: 0.75rem;
+  font-weight: 600;
 }
 
 @media (max-width: 760px) {
