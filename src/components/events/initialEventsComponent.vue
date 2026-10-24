@@ -212,7 +212,7 @@ onBeforeUnmount(() => window.clearTimeout(buscaTimer))
         <AppInput v-model="buscaProjeto" label="Buscar eventos" type="search" placeholder="Buscar evento..." icon="mdi-magnify" />
       </div>
 
-      <details class="category-filter" open>
+      <details class="category-filter">
         <summary>
           {{ tituloFiltro }}
           <span class="mdi mdi-chevron-down" aria-hidden="true"></span>

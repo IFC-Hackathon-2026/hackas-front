@@ -73,6 +73,7 @@ const router = createRouter({
       path: '/aboutus',
       name: 'aboutus',
       component: () => import('../views/AboutUsView.vue'),
+      meta: { requiresAuth: true },
     },
     {
       path: '/dashboard/:id',

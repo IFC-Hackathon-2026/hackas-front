@@ -201,4 +201,10 @@ select, input[type='file'] {
 .document-form > p, .document-form > .error {
   margin-bottom: 1rem;
 }
+
+@media (max-width: 480px) {
+  .source-options { flex-direction: column; }
+  .source-option { min-width: 0; overflow-wrap: anywhere; }
+}
+
 </style>

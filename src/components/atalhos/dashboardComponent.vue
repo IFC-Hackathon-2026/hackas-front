@@ -458,4 +458,23 @@ button {
 }
 .member-stats { display: flex; flex-wrap: wrap; gap: 8px 24px; }
 .member-stats > span + span { border-left: 1px solid #808080; padding-left: 24px; }
+
+@media (min-width: 701px) and (max-width: 1100px) {
+  .members { gap: 2rem; }
+  .member { gap: 1rem; }
+  .avatar { width: 64px; height: 64px; }
+}
+@media (max-width: 480px) {
+  .summary { grid-template-columns: minmax(0, 1fr); gap: 1.25rem; margin-bottom: 2rem; }
+  .summary > div { flex-direction: row; justify-content: space-between; gap: 1rem; text-align: left; }
+  .summary strong { font-size: 1.5rem; }
+  .member { align-items: flex-start; gap: 0.75rem; }
+  .avatar { width: 48px; height: 48px; }
+  .member-info h2 { flex-wrap: wrap; font-size: 1rem; }
+  .member-info p { overflow-wrap: anywhere; }
+  .member-stats { flex-direction: column; gap: 0.5rem; }
+  .member-stats > span + span { border-left: 0; padding-left: 0; }
+  .progress-heading { flex-wrap: wrap; gap: 0.5rem; }
+}
+
 </style>

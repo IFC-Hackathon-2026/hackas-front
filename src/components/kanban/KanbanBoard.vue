@@ -497,4 +497,10 @@ select {
   border-radius: 6px;
   background: transparent;
 }
+
+@media (max-width: 480px) {
+  .project-select { flex-direction: column; align-items: stretch; }
+  .project-select select { width: 100%; min-width: 0; }
+}
+
 </style>

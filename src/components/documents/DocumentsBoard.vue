@@ -124,4 +124,11 @@ watch(() => props.projetoId, () => {
 .error p {
   margin-bottom: 0.75rem;
 }
+
+@media (max-width: 480px) {
+  .documents-header { align-items: stretch; }
+  .documents-header > div { min-width: 0; }
+  .upload-button { width: 100%; }
+}
+
 </style>
