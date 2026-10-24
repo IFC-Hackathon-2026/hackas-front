@@ -4,13 +4,11 @@ import { ref, computed, onMounted, watch } from 'vue';
 import AppInput from '../forms/AppInput.vue';
 import categoriasApi from '@/api/categoriasApi';
 
-// EVENTOS ENVIADOS PARA A PÁGINA PAI
 const emit = defineEmits([
   'buscar-eventos',
   'filtrar-categorias'
 ]);
 
-// ESTADOS
 const buscaEvento = ref('');
 const buscaCategoria = ref('');
 const categorias = ref([]);
@@ -24,7 +22,6 @@ async function buscarCategorias() {
   erro.value = '';
 
   try {
-    // REQUISIÇÃO GET UTILIZANDO AXIOS
     const response = await categoriasApi.listar();
 
     const dados = Array.isArray(response.data)
@@ -46,7 +43,6 @@ async function buscarCategorias() {
   }
 }
 
-// FILTRAR CATEGORIAS PELA PESQUISA
 const categoriasFiltradas = computed(() => {
   const texto = buscaCategoria.value.toLowerCase().trim();
 
@@ -61,17 +57,14 @@ const categoriasFiltradas = computed(() => {
   );
 });
 
-// ENVIAR PESQUISA DE EVENTOS PARA A PÁGINA PAI
 watch(buscaEvento, (novoValor) => {
   emit('buscar-eventos', novoValor);
 });
 
-// ENVIAR CATEGORIAS SELECIONADAS PARA A PÁGINA PAI
 watch(categoriasSelecionadas, (novasCategorias) => {
   emit('filtrar-categorias', [...novasCategorias]);
 });
 
-// CARREGAR CATEGORIAS QUANDO O COMPONENTE ABRIR
 onMounted(buscarCategorias);
 </script>
 
@@ -87,7 +80,6 @@ onMounted(buscarCategorias);
 
     <div class="search-toolbar">
 
-      <!-- BUSCAR EVENTOS -->
       <div class="search">
         <AppInput
           v-model="buscaEvento"
@@ -98,7 +90,6 @@ onMounted(buscarCategorias);
         />
       </div>
 
-      <!-- FILTRO DE CATEGORIAS -->
       <details class="category-filter">
         <summary>
           TODAS AS CATEGORIAS
@@ -110,7 +101,6 @@ onMounted(buscarCategorias);
 
         <div class="filter-panel">
 
-          <!-- BUSCAR CATEGORIAS -->
           <AppInput
             v-model="buscaCategoria"
             label="Buscar categorias"
@@ -129,7 +119,6 @@ onMounted(buscarCategorias);
             {{ erro }}
           </p>
 
-          <!-- LISTA DE CATEGORIAS -->
           <fieldset v-else>
             <legend class="visually-hidden">
               Categorias de eventos
@@ -151,7 +140,6 @@ onMounted(buscarCategorias);
               </span>
             </label>
 
-            <!-- NENHUMA CATEGORIA -->
             <p v-if="categoriasFiltradas.length === 0">
               Nenhuma categoria encontrada.
             </p>
