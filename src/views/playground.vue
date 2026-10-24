@@ -1,9 +1,11 @@
 <script setup>
 import { computed, reactive, ref } from 'vue'
+import { prioridades } from '@/constants/prioridades'
 import { useUserStore } from '@/stores/userStore'
 import { useProjetoStore } from '@/stores/projetoStore'
 import { useStatusStore } from '@/stores/statusStore'
 import { useCategoriaStore } from '@/stores/categoriaStore'
+import { PROJECT_CATEGORIES } from '@/constants/projectCategories'
 import { useTarefaStore } from '@/stores/tarefaStore'
 import { useDocumentoStore } from '@/stores/documentoStore'
 import { usePedidoParticipacaoStore } from '@/stores/pedidoParticipacaoStore'
@@ -17,7 +19,7 @@ const categoriaStore = useCategoriaStore()
 const tarefaStore = useTarefaStore()
 const documentoStore = useDocumentoStore()
 const pedidoStore = usePedidoParticipacaoStore()
-const projetoForm = reactive({ nome: '', descricao: '' })
+const projetoForm = reactive({ nome: '', descricao: '', categorias: [] })
 const projetoFiltros = reactive({ search: '', meus: true, page: 1 })
 const projetoId = ref('')
 const projetoPhoto = ref(null)
@@ -29,6 +31,7 @@ const tarefaForm = reactive({
 const statusSelecionadoId = ref('')
 const categoriaSelecionadaId = ref('')
 const tarefaSelecionadaId = ref('')
+const somenteTarefasAtrasadas = ref(false)
 const documentoSelecionadoId = ref('')
 const documentoArquivo = ref(null)
 const documentoBusca = ref('')
@@ -45,12 +48,26 @@ async function carregarDadosProjeto() {
     () => Promise.all([
       statusStore.getStatuses(id),
       categoriaStore.getCategorias(id),
-      tarefaStore.getTarefas(id, { page_size: 100 }),
+      tarefaStore.getTarefas(id, {
+        page_size: 100,
+        atrasadas: somenteTarefasAtrasadas.value ? 'true' : undefined,
+      }),
+      tarefaStore.getTarefasAtrasadas(id, { page_size: 100 }),
       documentoStore.getDocumentos(id, { page_size: 100 }),
     ]),
     'Status, categorias, tarefas e documentos carregados.',
   )
   if (resultado && !tarefaForm.status) tarefaForm.status = statusStore.statusInicial?.id ?? ''
+}
+
+async function listarTarefas() {
+  await run(
+    () => tarefaStore.getTarefas(projetoSelecionadoId.value, {
+      page_size: 100,
+      atrasadas: somenteTarefasAtrasadas.value ? 'true' : undefined,
+    }),
+    somenteTarefasAtrasadas.value ? 'Tarefas atrasadas carregadas.' : 'Todas as tarefas carregadas.',
+  )
 }
 
 async function salvarStatus(criar) {
@@ -117,27 +134,57 @@ async function salvarTarefa(criar) {
       : tarefaStore.updateTarefa(tarefaSelecionadaId.value, projetoId, tarefaPayload()),
     criar ? 'Tarefa criada.' : 'Tarefa atualizada.',
   )
-  if (tarefa) selecionarTarefa(tarefa)
+  if (tarefa) {
+    selecionarTarefa(tarefa)
+    await Promise.all([
+      projetoStore.getProjeto(projetoId),
+      userStore.getMe(),
+    ])
+  }
 }
 
-function selecionarTarefa(tarefa) {
-  tarefaSelecionadaId.value = tarefa.id
+async function selecionarTarefa(tarefa) {
+  const tarefaCompleta = tarefa.descricao === undefined
+    ? await run(
+      () => tarefaStore.getTarefa(tarefa.id, projetoSelecionadoId.value),
+      'Detalhes da tarefa carregados.',
+    )
+    : tarefa
+  if (!tarefaCompleta) return
+  tarefaSelecionadaId.value = tarefaCompleta.id
   Object.assign(tarefaForm, {
-    titulo: tarefa.titulo ?? '',
-    descricao: tarefa.descricao ?? '',
-    prioridade: tarefa.prioridade ?? 'media',
-    status: typeof tarefa.status === 'object' ? tarefa.status.id : tarefa.status,
-    prazo: tarefa.prazo ? tarefa.prazo.slice(0, 16) : '',
-    categoria: (tarefa.categoria ?? []).map((item) => typeof item === 'object' ? item.id : item),
-    responsavel: (tarefa.responsavel ?? []).map((item) => typeof item === 'object' ? item.id : item),
+    titulo: tarefaCompleta.titulo ?? '',
+    descricao: tarefaCompleta.descricao ?? '',
+    prioridade: tarefaCompleta.prioridade ?? 'media',
+    status: typeof tarefaCompleta.status === 'object' ? tarefaCompleta.status.id : tarefaCompleta.status,
+    prazo: tarefaCompleta.prazo ? tarefaCompleta.prazo.slice(0, 16) : '',
+    categoria: (tarefaCompleta.categoria ?? []).map((item) => typeof item === 'object' ? item.id : item),
+    responsavel: (tarefaCompleta.responsavel ?? []).map((item) => typeof item === 'object' ? item.id : item),
   })
 }
 
-async function excluirTarefa() {
+async function carregarTarefasAtrasadas() {
   await run(
+    () => tarefaStore.getTarefasAtrasadas(projetoSelecionadoId.value, { page_size: 100 }),
+    'Tarefas atrasadas carregadas.',
+  )
+}
+
+function nomeSituacao(situacao) {
+  return { pendente: 'Pendente', atrasada: 'Atrasada', concluida: 'Concluída' }[situacao] ?? situacao
+}
+
+async function excluirTarefa() {
+  const excluida = await run(
     () => tarefaStore.deleteTarefa(tarefaSelecionadaId.value, projetoSelecionadoId.value),
     'Tarefa excluída.',
   )
+  if (excluida !== null) {
+    await Promise.all([
+      projetoStore.getProjeto(projetoSelecionadoId.value),
+      userStore.getMe(),
+    ])
+  }
   tarefaSelecionadaId.value = ''
 }
 
@@ -270,6 +317,7 @@ async function consultarProjeto(id = projetoId.value) {
     projetoId.value = projeto.id
     projetoForm.nome = projeto.nome
     projetoForm.descricao = projeto.descricao
+    projetoForm.categorias = [...(projeto.categorias ?? [])]
     await carregarDadosProjeto()
   }
 }
@@ -292,6 +340,7 @@ async function excluirProjeto() {
     projetoId.value = ''
     projetoForm.nome = ''
     projetoForm.descricao = ''
+    projetoForm.categorias = []
   }, 'Projeto excluído.')
 }
 
@@ -570,6 +619,12 @@ function logout() {
             <small>ID: {{ userStore.user.id }}</small>
           </div>
         </div>
+        <p v-if="userStore.user">
+          Tarefas do perfil — progresso: {{ userStore.resumoTarefas.progresso }}% ·
+          concluídas: {{ userStore.resumoTarefas.concluidas }} ·
+          não concluídas: {{ userStore.resumoTarefas.nao_concluidas }} ·
+          atrasadas: {{ userStore.resumoTarefas.atrasadas }}
+        </p>
         <p v-else>Nenhum usuário foi carregado.</p>
         <pre>{{ JSON.stringify(userStore.user, null, 2) }}</pre>
       </section>
@@ -656,6 +711,36 @@ function logout() {
           <form @submit.prevent="salvarProjeto(true)">
             <label>Nome<input v-model="projetoForm.nome" maxlength="150" required /></label>
             <label>Descrição<textarea v-model="projetoForm.descricao" rows="4"></textarea></label>
+            <fieldset class="category-picker">
+              <legend>Filtros fixos do projeto</legend>
+              <p><code>categorias</code> define em quais filtros o projeto aparece.</p>
+              <template v-for="categoria in PROJECT_CATEGORIES" :key="categoria.value">
+                <div v-if="categoria.selectable === false" class="checkbox-label" :style="{ backgroundColor: categoria.color }">
+                  <strong>{{ categoria.label }}</strong>
+                </div>
+                <label v-else class="checkbox-label" :style="{ backgroundColor: categoria.color }">
+                  <input v-model="projetoForm.categorias" type="checkbox" :value="categoria.value" />
+                  {{ categoria.label }}
+                </label>
+                <template
+                  v-for="subcategoria in categoria.children"
+                  :key="subcategoria.value"
+                >
+                  <label class="checkbox-label category-child" :style="subcategoria.color ? { backgroundColor: subcategoria.color } : null">
+                    <input v-model="projetoForm.categorias" type="checkbox" :value="subcategoria.value" />
+                    {{ subcategoria.label }}
+                  </label>
+                  <label
+                    v-for="item in subcategoria.children"
+                    :key="item.value"
+                    class="checkbox-label category-grandchild"
+                  >
+                    <input v-model="projetoForm.categorias" type="checkbox" :value="item.value" />
+                    {{ item.label }}
+                  </label>
+                </template>
+              </template>
+            </fieldset>
             <button>Criar novo projeto</button>
             <button type="button" :disabled="!projetoStore.podeEditar || !projetoForm.nome.trim()" @click="salvarProjeto(false)">Salvar no projeto selecionado</button>
           </form>
@@ -667,6 +752,21 @@ function logout() {
             <p>{{ projetoStore.projetoAtual.nome }} · ID {{ projetoStore.projetoAtual.id }}</p>
             <p>Cargo: {{ projetoStore.meuCargo || 'Sem participação' }}</p>
             <p>Pode editar: {{ projetoStore.podeEditar ? 'Sim' : 'Não' }} · Pode excluir: {{ projetoStore.podeExcluir ? 'Sim' : 'Não' }}</p>
+            <template v-if="projetoStore.projetoAtual.resumo_tarefas">
+              <h4 class="spaced">Resumo do dashboard</h4>
+              <p>
+                Progresso: {{ projetoStore.resumoTarefas.progresso }}% ·
+                Atrasadas: {{ projetoStore.resumoTarefas.atrasadas }} ·
+                Concluídas: {{ projetoStore.resumoTarefas.concluidas }} ·
+                Não concluídas: {{ projetoStore.resumoTarefas.nao_concluidas }}
+              </p>
+              <ul>
+                <li v-for="item in projetoStore.desempenhoParticipantes" :key="item.usuario.id">
+                  {{ item.usuario.name || item.usuario.email }} —
+                  atrasadas: {{ item.atrasadas }} · concluídas: {{ item.concluidas }}
+                </li>
+              </ul>
+            </template>
             <img v-if="projetoStore.projetoAtual.foto?.url" class="project-photo" :src="resolveMediaUrl(projetoStore.projetoAtual.foto.url)" alt="Foto do projeto" />
             <div class="photo-update">
               <label>Foto<input type="file" accept="image/png,image/jpeg" @change="projetoPhoto = $event.target.files?.[0] ?? null" /></label>
@@ -726,6 +826,7 @@ function logout() {
                 <option value="pendente">Pendente</option>
                 <option value="aceito">Aceito</option>
                 <option value="recusado">Recusado</option>
+                <option value="removido">Removido da equipe</option>
               </select>
             </label>
             <label>Tipo
@@ -853,15 +954,22 @@ function logout() {
 
         <section class="card card-wide">
           <h3>Tarefas</h3>
-          <p><code>GET/POST/PATCH/DELETE /tarefas/</code></p>
+          <p><code>GET/POST/PATCH/DELETE /tarefas/</code> · <code>GET /tarefas/atrasadas/</code></p>
+          <form class="inline-form" @submit.prevent="listarTarefas">
+            <label class="checkbox-label">
+              <input v-model="somenteTarefasAtrasadas" type="checkbox" /> Somente atrasadas
+            </label>
+            <button>Aplicar filtro</button>
+          </form>
           <form @submit.prevent="salvarTarefa(true)">
             <label>Título<input v-model="tarefaForm.titulo" maxlength="150" required /></label>
             <label>Descrição<textarea v-model="tarefaForm.descricao" rows="3"></textarea></label>
             <label>
               Prioridade
               <select v-model="tarefaForm.prioridade">
-                <option value="baixa">Baixa</option><option value="media">Média</option>
-                <option value="alta">Alta</option><option value="urgente">Urgente</option>
+                <option v-for="(prioridade, valor) in prioridades" :key="valor" :value="valor">
+                  {{ prioridade.nome }}
+                </option>
               </select>
             </label>
             <label>
@@ -891,16 +999,37 @@ function logout() {
 
           <div class="table-wrapper spaced">
             <table>
-              <thead><tr><th>ID</th><th>Título</th><th>Prioridade</th><th>Status</th><th>Ação</th></tr></thead>
+              <thead><tr><th>ID</th><th>Título</th><th>Prioridade</th><th>Situação</th><th>Criada em</th><th>Prazo</th><th>Categorias</th><th>Ação</th></tr></thead>
               <tbody>
                 <tr v-for="tarefa in tarefaStore.tarefas" :key="tarefa.id">
-                  <td>{{ tarefa.id }}</td><td>{{ tarefa.titulo }}</td><td>{{ tarefa.prioridade }}</td><td>{{ tarefa.status }}</td>
+                  <td>{{ tarefa.id }}</td>
+                  <td>{{ tarefa.titulo }}</td>
+                  <td>{{ tarefa.prioridade }}</td>
+                  <td>{{ nomeSituacao(tarefa.situacao) }}</td>
+                  <td>{{ new Date(tarefa.criado_em).toLocaleString('pt-BR') }}</td>
+                  <td>{{ tarefa.prazo ? new Date(tarefa.prazo).toLocaleString('pt-BR') : 'Sem prazo' }}</td>
+                  <td>{{ tarefa.categoria?.join(', ') || 'Sem categoria' }}</td>
                   <td><button type="button" class="small" @click="selecionarTarefa(tarefa)">Selecionar</button></td>
                 </tr>
-                <tr v-if="!tarefaStore.tarefas.length"><td colspan="5">Nenhuma tarefa carregada.</td></tr>
+                <tr v-if="!tarefaStore.tarefas.length"><td colspan="8">Nenhuma tarefa carregada.</td></tr>
               </tbody>
             </table>
           </div>
+          <div class="card-heading spaced">
+            <div>
+              <h4>Tarefas atrasadas</h4>
+              <p>Total: {{ tarefaStore.totalAtrasadas }}</p>
+            </div>
+            <button type="button" @click="carregarTarefasAtrasadas">Carregar atrasadas</button>
+          </div>
+          <ul class="select-list">
+            <li v-for="tarefa in tarefaStore.tarefasAtrasadas" :key="tarefa.id">
+              <button type="button" class="item-button" @click="selecionarTarefa(tarefa)">
+                {{ tarefa.titulo }} — prazo {{ new Date(tarefa.prazo).toLocaleString('pt-BR') }}
+              </button>
+            </li>
+            <li v-if="!tarefaStore.tarefasAtrasadas.length">Nenhuma tarefa atrasada.</li>
+          </ul>
           <pre v-if="tarefaStore.tarefaAtual">{{ JSON.stringify(tarefaStore.tarefaAtual, null, 2) }}</pre>
         </section>
       </fieldset>
@@ -1063,6 +1192,8 @@ input, textarea, select {
 .project-controls .card { min-width: 0; }
 .checkbox-label { display: flex; align-items: center; }
 .checkbox-label input { width: auto; }
+.category-child { margin-left: 1.5rem; }
+.category-grandchild { margin-left: 3rem; }
 .project-photo { max-width: 100%; max-height: 180px; object-fit: contain; margin-top: 1rem; }
 .choices { display: flex; flex-wrap: wrap; gap: 0.75rem; padding: 0.8rem; border: 1px solid #dfe3ea; border-radius: 7px; }
 .select-list { display: grid; gap: 0.4rem; margin-top: 1rem; }

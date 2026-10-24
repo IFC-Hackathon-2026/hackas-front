@@ -1,4 +1,5 @@
 <script setup>
+const props = defineProps({ label: { type: String, default: 'Cor da categoria' } })
 const model = defineModel({ type: String, required: true })
 const colors = [
   '#2767AA',
@@ -14,7 +15,7 @@ const colors = [
 
 <template>
   <div class="color-picker">
-    <div class="choices" role="group" aria-label="Cor da categoria">
+    <div class="choices" role="group" :aria-label="props.label">
       <button
         v-for="color in colors"
         :key="color"

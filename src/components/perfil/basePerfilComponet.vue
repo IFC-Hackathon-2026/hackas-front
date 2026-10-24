@@ -6,6 +6,7 @@ import { useUserStore } from '@/stores/userStore'
 import api from '@/api/config'
 import editarPerfilComponent from './editarPerfilComponent.vue'
 import atividadePerfilComponent from './atividadePerfilComponent.vue'
+import { notificacao } from '@/services/notificacaoService'
 
 const router = useRouter()
 const userStore = useUserStore()
@@ -33,6 +34,80 @@ onMounted(async () => {
     console.error('Não foi possível carregar o perfil.')
   }
 })
+
+    error.value = 'Não foi possível carregar seu perfil.'
+    notificacao.erro(error.value)
+  } finally {
+    fetching.value = false
+  }
+})
+
+onUnmounted(() => {
+  if (previewUrl.value) URL.revokeObjectURL(previewUrl.value)
+})
+
+function selecionarFoto(event) {
+  message.value = ''
+  error.value = ''
+  if (previewUrl.value) URL.revokeObjectURL(previewUrl.value)
+
+  file.value = event.target.files?.[0] ?? null
+  previewUrl.value = file.value ? URL.createObjectURL(file.value) : ''
+}
+
+function limparFoto() {
+  file.value = null
+  if (previewUrl.value) URL.revokeObjectURL(previewUrl.value)
+  previewUrl.value = ''
+  if (photoInput.value) photoInput.value.value = ''
+}
+
+async function saveProfile() {
+  if (!ready.value || fetching.value || loading.value) return
+  error.value = ''
+  message.value = ''
+  if (!form.name.trim() || !form.email.trim()) {
+    error.value = 'Preencha o nome e o e-mail.'
+    notificacao.aviso(error.value)
+    return
+  }
+  if (file.value && !TIPOS_FOTO.includes(file.value.type)) {
+    error.value = 'Selecione uma imagem JPG ou PNG.'
+    notificacao.aviso(error.value)
+    return
+  }
+  if (file.value && file.value.size > TAMANHO_MAX) {
+    error.value = 'A imagem deve ter no máximo 5MB.'
+    notificacao.aviso(error.value)
+    return
+  }
+  loading.value = true
+  try {
+    const data = { name: form.name.trim(), email: form.email.trim() }
+    if (file.value) {
+      const { data: image } = await userService.uploadImage(file.value)
+      if (!image.attachment_key) throw new Error('Upload sem chave da imagem.')
+      data.foto_attachment_key = image.attachment_key
+    }
+    const user = await userStore.updateMe(data)
+    form.name = user.name ?? ''
+    form.email = user.email ?? ''
+    photoFailed.value = false
+    limparFoto()
+    notificacao.sucesso('Perfil atualizado com sucesso.')
+  } catch (requestError) {
+    const data = requestError.response?.data
+    const details = data && typeof data === 'object'
+      ? Object.entries(data).map(([field, messages]) =>
+          `${({ name: 'Nome', email: 'E-mail', foto_attachment_key: 'Foto', file: 'Foto' })[field] ?? field}: ${Array.isArray(messages) ? messages.join(' ') : messages}`,
+        ).join(' ')
+      : ''
+    error.value = details || 'Não foi possível salvar o perfil. Tente novamente.'
+    notificacao.erro(error.value)
+  } finally {
+    loading.value = false
+  }
+}
 
 function sair() {
   userStore.logout()

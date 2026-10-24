@@ -4,5 +4,5 @@ import initialEventsComponent from '@/components/events/initialEventsComponent.v
 </script>
 
 <template>
-    <initialEventsComponent/>
+  <initialEventsComponent />
 </template>
