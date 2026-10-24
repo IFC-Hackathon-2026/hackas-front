@@ -9,7 +9,7 @@ const projetoStore = useProjetoStore()
 </script>
 
 <template>
-    <initialEventsComponent/>
+  <initialEventsComponent />
   <KanbanBoard />
   <DocumentsBoard :projeto-id="projetoStore.projetoAtual?.id" />
 </template>

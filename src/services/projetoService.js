@@ -11,11 +11,22 @@ function projetoPayload(data) {
 
 export default class ProjetoService {
   getProjetos(params = {}) {
-    return api.get('/projetos/', { params })
+    const categorias = Array.isArray(params.categorias)
+      ? params.categorias.join(',')
+      : params.categorias
+    return api.get('/projetos/', { params: { ...params, categorias } })
   }
 
   getProjeto(id) {
     return api.get(`/projetos/${id}/`)
+  }
+
+  getProjetosDestaque() {
+    return api.get('/projetos/destaques/')
+  }
+
+  removeParticipante(projetoId, participacaoId) {
+    return api.delete(`/projetos/${projetoId}/participantes/${participacaoId}/`)
   }
 
   createProjeto(data) {
