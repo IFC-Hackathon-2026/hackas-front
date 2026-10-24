@@ -16,13 +16,30 @@ const router = createRouter({
       path: '/',
       name: 'home',
       component: HomeView,
-      meta: { guestOnly: true },
     },
     {
       path: '/eventos',
       name: 'eventos',
       component: EventsView,
       meta: { requiresAuth: true },
+    },
+    {
+      path: '/eventos/:id',
+      name: 'detailsEventsView',
+      component: () => import('../views/detailsEventsView.vue'),
+      meta: { requiresAuth: true },
+      children: [
+        {
+          path: 'dashboard',
+          name: 'dashboard',
+          component: () => import('../components/atalhos/dashboardComponent.vue'),
+        },
+        {
+          path: 'config',
+          name: 'config',
+          component: () => import('../components/atalhos/princiapalconfigComponent.vue'),
+        },
+      ],
     },
     {
       path: '/login',
@@ -42,15 +59,14 @@ const router = createRouter({
     },
     {
       path: '/dashboard/:id',
-      name: 'dashboard',
-      meta: { requiresAuth: true },
-      component: () => import('../components/layout/atalhosEventoComponent.vue'),
+      redirect: (to) => ({ name: 'dashboard', params: { id: to.params.id } }),
     },
     {
       path: '/config/:id?',
-      name: 'config',
-      meta: { requiresAuth: true },
-      component: () => import('../components/atalhos/princiapalconfigComponent.vue'),
+      redirect: (to) => {
+        const id = to.params.id || to.query.id
+        return id ? { name: 'config', params: { id } } : { name: 'eventos' }
+      },
     },
     {
       path: '/perfil',

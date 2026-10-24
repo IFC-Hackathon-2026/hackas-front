@@ -19,6 +19,7 @@ export const useProjetoStore = defineStore('projeto', () => {
   let consultaAtual = null
   let idConsulta = null
   const projetos = ref([])
+  const projetosDestaque = ref([])
   const projetoAtual = ref(null)
   const total = ref(0)
   const next = ref(null)
@@ -83,6 +84,14 @@ export const useProjetoStore = defineStore('projeto', () => {
 
   function getMeusProjetos(params = {}) {
     return getProjetos({ ...params, meus: 'true' })
+  }
+
+  function getProjetosDestaque() {
+    return execute(async () => {
+      const { data } = await projetoService.getProjetosDestaque()
+      projetosDestaque.value = data
+      return projetosDestaque.value
+    })
   }
 
   function getProjeto(id) {
@@ -177,6 +186,7 @@ export const useProjetoStore = defineStore('projeto', () => {
     consultaAtual = null
     idConsulta = null
     projetos.value = []
+    projetosDestaque.value = []
     projetoAtual.value = null
     total.value = 0
     next.value = null
@@ -185,9 +195,9 @@ export const useProjetoStore = defineStore('projeto', () => {
   }
 
   return {
-    projetos, projetoAtual, total, next, previous, loading, error,
+    projetos, projetosDestaque, projetoAtual, total, next, previous, loading, error,
     participantes, meuCargo, resumoTarefas, podeEditar, podeExcluir, podeConfigurar,
-    getProjetos, getMeusProjetos, getProjeto, selecionarProjeto,
+    getProjetos, getMeusProjetos, getProjetosDestaque, getProjeto, selecionarProjeto,
     createProjeto, updateProjeto, deleteProjeto, updatePhoto,
     updateParticipante, deleteParticipante, reset,
   }

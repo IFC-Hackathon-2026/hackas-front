@@ -13,6 +13,7 @@ import TaskCategoryField from './fields/TaskCategoryField.vue'
 import TaskAssigneeField from './fields/TaskAssigneeField.vue'
 import TaskDateFields from './fields/TaskDateFields.vue'
 import TaskPriorityField from './fields/TaskPriorityField.vue'
+import TaskDocuments from './TaskDocuments.vue'
 
 const emit = defineEmits(['saved', 'deleted'])
 const tarefaStore = useTarefaStore()
@@ -185,6 +186,11 @@ async function deleteTarefa() {
         </select>
       </label>
       <TaskPriorityField v-model="tarefaStore.tarefa.prioridade" />
+      <TaskDocuments
+        v-if="editing"
+        :tarefa-id="tarefaStore.tarefa.id"
+        :projeto-id="tarefaStore.tarefa.projeto"
+      />
       <p v-if="errorMsg" class="error" role="alert">{{ errorMsg }}</p>
       <AppButton type="submit" :disabled="Boolean(optionsError) || (editing && !temAlteracoes)">{{
         loading ? 'Salvando…' : editing ? 'Salvar alterações' : 'Adicionar tarefa'

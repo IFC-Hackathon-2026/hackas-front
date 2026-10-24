@@ -1,7 +1,7 @@
 <script setup>
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import AppInput from '../forms/AppInput.vue';
-import { PROJECT_CATEGORIES, PROJECT_CATEGORY_LABELS } from '@/constants/projectCategories'
+import { PROJECT_CATEGORIES, PROJECT_CATEGORY_LABELS, PROJECT_CATEGORY_STYLES } from '@/constants/projectCategories'
 import { useProjetoStore } from '@/stores/projetoStore'
 
 const projetoStore = useProjetoStore()
@@ -42,7 +42,7 @@ async function carregarProjetos() {
   await projetoStore.getProjetos({
     search: buscaProjeto.value.trim() || undefined,
     categorias: categoriasSelecionadas.value.length
-      ? categoriasSelecionadas.value.join(',')
+      ? categoriasSelecionadas.value
       : undefined,
     page_size: 100,
   })
@@ -108,7 +108,7 @@ onBeforeUnmount(() => window.clearTimeout(buscaTimer))
                     </label>
                   </div>
                 </div>
-              </div>
+              </div> 
             </div>
             <p v-if="!categoriasFiltradas.length" class="empty-filter">Nenhuma categoria encontrada.</p>
           </fieldset>
@@ -125,13 +125,20 @@ onBeforeUnmount(() => window.clearTimeout(buscaTimer))
         <img v-if="projeto.foto?.url" :src="projeto.foto.url" :alt="`Imagem de ${projeto.nome}`" />
         <div v-else class="event-placeholder" aria-hidden="true"></div>
         <div class="event-card__content">
+
           <div class="event-tags">
-            <span v-for="categoria in projeto.categorias" :key="categoria">
+            <span v-for="categoria in projeto.categorias" :key="categoria" :style="{ color: PROJECT_CATEGORY_STYLES[categoria]?.color, backgroundColor: PROJECT_CATEGORY_STYLES[categoria]?.background }">
+              <span :class="['mdi', PROJECT_CATEGORY_STYLES[categoria]?.icon || 'mdi-tag-outline']" aria-hidden="true"></span>
               {{ PROJECT_CATEGORY_LABELS[categoria] ?? categoria }}
             </span>
           </div>
           <h2>{{ projeto.nome }}</h2>
           <p>{{ projeto.descricao || 'Sem descrição.' }}</p>
+          <RouterLink class="event-details" :to="{ name: 'detailsEventsView', params: { id: projeto.id } }" :aria-label="`Ver detalhes de ${projeto.nome}`">
+            Ver detalhes
+            <span class="mdi mdi-arrow-right" aria-hidden="true"></span>
+          </RouterLink>
+          
         </div>
       </article>
       <p v-if="!projetoStore.projetos.length" class="results-status">Nenhum evento corresponde aos filtros.</p>
@@ -142,7 +149,7 @@ onBeforeUnmount(() => window.clearTimeout(buscaTimer))
 <style scoped>
 .events-intro {
   max-width: 90%;
-  margin: 0 auto;
+  margin: 20px auto;
   padding-block: clamp(2rem, 5vw, 4rem) 2rem;
   color: var(--azul-escuro, #001228);
 }
@@ -347,6 +354,9 @@ onBeforeUnmount(() => window.clearTimeout(buscaTimer))
 }
 
 .event-card__content {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
   padding: 1rem;
 }
 
@@ -368,15 +378,55 @@ onBeforeUnmount(() => window.clearTimeout(buscaTimer))
   display: flex;
   flex-wrap: wrap;
   gap: 0.35rem;
+  justify-content: flex-end;
 }
 
-.event-tags span {
+.event-tags > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
   padding: 0.2rem 0.5rem;
   background: #e7f0fb;
   border-radius: 999px;
   color: var(--primaria, #00265c);
   font-size: 0.75rem;
   font-weight: 600;
+}
+
+.event-details {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  align-self: stretch;
+  width: 100%;
+  min-height: 38px;
+  gap: 0.5rem;
+  margin-top: auto;
+  padding: 5px 14px;
+  border: 1px solid #2767aa;
+  border-radius: 6px;
+  color: var(--primaria);
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.event-details:hover {
+  background: #f0f5fb;
+}
+
+.event-details:focus-visible {
+  outline: 2px solid #2767aa;
+  outline-offset: 3px;
+}
+
+.event-card {
+  display: flex;
+  flex-direction: column;
+}
+
+.event-card__content > p {
+  margin-bottom: 20px;
 }
 
 @media (max-width: 760px) {

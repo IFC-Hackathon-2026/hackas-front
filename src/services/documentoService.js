@@ -6,7 +6,7 @@ function validarProjeto(projetoId) {
 
 function documentoPayload(data) {
   return Object.fromEntries(
-    ['nome', 'tarefa', 'arquivo_attachment_key']
+    ['nome', 'projeto', 'tarefa', 'url', 'arquivo_attachment_key']
       .filter((key) => data[key] !== undefined)
       .map((key) => [key, data[key]]),
   )
@@ -34,11 +34,12 @@ export default class DocumentoService {
     return api.post('/documentos/', documentoPayload(data))
   }
 
-  createDocumentoComArquivo({ file, nome, tarefa, description = '' }) {
+  createDocumentoComArquivo({ file, nome, projeto, tarefa, description = '' }) {
     const formData = new FormData()
     formData.append('arquivo_upload', file)
     formData.append('nome', nome)
-    formData.append('tarefa', tarefa)
+    if (projeto != null) formData.append('projeto', projeto)
+    if (tarefa != null) formData.append('tarefa', tarefa)
     if (description) formData.append('descricao_arquivo', description)
     return api.post('/documentos/', formData)
   }

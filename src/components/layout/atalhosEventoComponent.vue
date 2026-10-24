@@ -2,7 +2,6 @@
 import { computed } from 'vue'
 import { useRoute } from 'vue-router'
 import { useProjetoStore } from '@/stores/projetoStore'
-import DashboardComponent from '@/components/atalhos/dashboardComponent.vue'
 
 const route = useRoute()
 const projetoStore = useProjetoStore()
@@ -17,8 +16,8 @@ const podeVerConfiguracoes = computed(() => equipeId.value &&
       <li><span class="mdi mdi-view-grid-outline" aria-hidden="true"></span> Kanban</li>
       <li><span class="mdi mdi-file-document-multiple-outline" aria-hidden="true"></span> Documentos</li>
       <li>
-        <RouterLink v-if="equipeId" :to="{ name: 'dashboard', params: { id: equipeId } }" active-class="active">
-          <span class="mdi mdi-chart-box-outline" aria-hidden="true"></span> Dashboard
+        <RouterLink v-if="equipeId" :to="{ name: 'dashboard', params: { id: equipeId } }" :class="{ active: route.name === 'detailsEventsView' }" active-class="active">
+          <span class="mdi mdi-information-outline" aria-hidden="true"></span> Dashboard
         </RouterLink>
         <span v-else>Dashboard</span>
       </li>
@@ -31,7 +30,6 @@ const podeVerConfiguracoes = computed(() => equipeId.value &&
       </li>
     </ul>
   </nav>
-  <DashboardComponent v-if="route.name === 'dashboard'" />
 </template>
 
 <style scoped>
@@ -40,9 +38,9 @@ const podeVerConfiguracoes = computed(() => equipeId.value &&
   align-items: center;
   justify-content: center;
   width: 100%;
-  max-width: 1012px;
+  max-width: 100%;
   min-height: 94px;
-  margin: 24px auto 0;
+  margin: 40px auto 0;
   padding: 20px 28px;
   border-radius: 14px;
   background: #f6f6f2;
@@ -66,7 +64,7 @@ a {
    color: inherit; text-decoration: none; }
 a.active { 
   color: var(--primaria); 
-  text-decoration: underline;
+  text-decoration: none;
   text-underline-offset: 5px; 
 }
 .mdi { 

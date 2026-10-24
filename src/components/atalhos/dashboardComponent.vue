@@ -56,10 +56,6 @@ const atrasadas = computed(() =>
   tarefas.value.filter(atrasada).length
 )
 
-const pendentes = computed(() =>
-  tarefas.value.filter(pendente).length
-)
-
 const progresso = computed(() =>
   tarefas.value.length
     ? Math.round((concluidas.value / tarefas.value.length) * 100)
@@ -193,7 +189,7 @@ onScopeDispose(() => {
 </script>
 
 <template>
-  <section class="dashboard" aria-labelledby="dashboard-title">
+  <section class="dashboard" aria-label="Dashboard do evento">
 
     <p v-if="!equipeId">
       Abra o dashboard pelo ID da equipe.
@@ -213,30 +209,22 @@ onScopeDispose(() => {
     <template v-else-if="equipe">
       <div class="summary">
         <div>
-          <strong>{{ tarefas.length }}</strong>
-          <span>Tarefas no total</span>
+          <span>Progresso</span>
+          <strong>{{ progresso }}%</strong>
         </div>
-
         <div>
-          <strong>{{ concluidas }}</strong>
-          <span>Concluídas</span>
-        </div>
-
-        <div>
-          <strong>{{ pendentes }}</strong>
-          <span>Pendentes</span>
-        </div>
-
-        <div>
-          <strong class="overdue">{{ atrasadas }}</strong>
           <span>Atrasadas</span>
+          <strong class="overdue">{{ atrasadas }}</strong>
+        </div>
+        <div>
+          <span>Concluídas</span>
+          <strong>{{ concluidas }}</strong>
         </div>
       </div>
 
       <div class="progress-section">
         <div class="progress-heading">
-          <h2>Progresso da equipe</h2>
-          <span>{{ progresso }}%</span>
+          <h2>Situação do evento</h2>
         </div>
 
         <progress
@@ -247,10 +235,6 @@ onScopeDispose(() => {
           {{ progresso }}%
         </progress>
 
-        <p>
-          {{ concluidas }} de {{ tarefas.length }}
-          {{ tarefas.length <= 1 ? 'tarefa concluída' : 'tarefas concluídas' }}
-        </p>
       </div>
 
       <ul v-if="participantes.length" class="members">
@@ -292,15 +276,9 @@ onScopeDispose(() => {
               ></span>
             </h2>
 
-            <p>
-              {{ participante.concluidas }} de
-              {{ participante.total }}
-              {{ participante.total <= 1 ? 'tarefa concluída' : 'tarefas concluídas' }}
-            </p>
-
-            <p class="overdue">
-              {{ participante.atrasadas }}
-              {{ participante.atrasadas <= 1 ? 'tarefa atrasada' : 'tarefas atrasadas' }}
+            <p class="member-stats">
+              <span>Atrasadas: <span class="overdue">{{ participante.atrasadas }}</span></span>
+              <span>Concluídas: {{ participante.concluidas }}</span>
             </p>
           </div>
         </li>
@@ -315,9 +293,10 @@ onScopeDispose(() => {
 
 <style scoped>
 .dashboard {
-  max-width: 1220px;
-  margin: 48px auto 64px;
-  color: var(--primaria);
+  width: 100%;
+  max-width: 100%;
+  margin: 56px auto 64px;
+  color: var(--texto);
 }
 
 h1 {
@@ -332,7 +311,7 @@ h1 span {
 
 .summary {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(3, 1fr);
   gap: 24px;
   margin-bottom: 48px;
 }
@@ -352,8 +331,8 @@ h1 span {
 }
 
 .summary span {
-  font-size: 14px;
-  color: #4f5560;
+  font-size: 18px;
+  color: var(--texto);
 }
 
 .overdue {
@@ -373,7 +352,8 @@ h1 span {
 
 .progress-heading h2 {
   font-size: 18px;
-  font-weight: 600;
+  font-weight: 500;
+  color: var(--texto);
 }
 
 progress {
@@ -411,7 +391,7 @@ progress::-moz-progress-bar {
 .members {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 54px 72px;
+  gap: 54px 100px;
 }
 
 .member {
@@ -462,9 +442,8 @@ button {
 }
 
 @media (max-width: 700px) {
-  .summary {
-    grid-template-columns: repeat(2, 1fr);
-  }
+  .summary { gap: 12px; }
+  .summary span { font-size: 14px; }
 
   .members {
     grid-template-columns: 1fr;
@@ -475,4 +454,6 @@ button {
     margin-top: 28px;
   }
 }
+.member-stats { display: flex; flex-wrap: wrap; gap: 8px 24px; }
+.member-stats > span + span { border-left: 1px solid #808080; padding-left: 24px; }
 </style>
