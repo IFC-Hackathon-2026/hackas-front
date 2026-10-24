@@ -1,5 +1,5 @@
 import { computed, ref } from 'vue'
-import { defineStore } from 'pinia'
+import { acceptHMRUpdate, defineStore } from 'pinia'
 import TarefaService from '@/services/tarefaService'
 
 const tarefaService = new TarefaService()
@@ -15,6 +15,7 @@ function criarTarefaBase() {
     criado_em: null,
     atualizado_em: null,
     concluido_em: null,
+    situacao: 'pendente',
     projeto: null,
     status: null,
     criado_por: null,
@@ -51,6 +52,8 @@ export const useTarefaStore = defineStore('tarefa', () => {
   })
 
   const tarefas = ref([])
+  const tarefasAtrasadas = ref([])
+  const totalAtrasadas = ref(0)
   const tarefasFiltradas = computed(() =>
     tarefas.value.filter((item) => {
       if (!filtros.value.prazo) return true
@@ -100,12 +103,26 @@ export const useTarefaStore = defineStore('tarefa', () => {
     if (index === -1) tarefas.value.unshift(tarefa)
     else tarefas.value[index] = tarefa
     if (tarefaAtual.value?.id === tarefa.id) tarefaAtual.value = tarefa
+    const indexAtrasada = tarefasAtrasadas.value.findIndex((item) => item.id === tarefa.id)
+    if (tarefa.situacao === 'atrasada') {
+      if (indexAtrasada === -1) {
+        tarefasAtrasadas.value.unshift(tarefa)
+        totalAtrasadas.value++
+      } else tarefasAtrasadas.value[indexAtrasada] = tarefa
+    } else if (indexAtrasada !== -1) {
+      tarefasAtrasadas.value.splice(indexAtrasada, 1)
+      totalAtrasadas.value = Math.max(0, totalAtrasadas.value - 1)
+    }
   }
 
   function getTarefas(projetoId, params = {}, todas = false) {
     return execute(async () => {
       const requestVersion = ++version
-      if (String(projetoAtualId.value) !== String(projetoId)) tarefas.value = []
+      if (String(projetoAtualId.value) !== String(projetoId)) {
+        tarefas.value = []
+        tarefasAtrasadas.value = []
+        totalAtrasadas.value = 0
+      }
       projetoAtualId.value = projetoId
       let { data } = await tarefaService.getTarefas(projetoId, params)
       const items = [...(data.results ?? data)]
@@ -130,6 +147,40 @@ export const useTarefaStore = defineStore('tarefa', () => {
     })
   }
 
+  // Busca todas as opções sem substituir as tarefas exibidas no Kanban.
+  function getTarefasParaSelecao(projetoId) {
+    return execute(async () => {
+      const items = []
+      let page = 1
+      let temProxima
+      do {
+        const { data } = await tarefaService.getTarefas(projetoId, { page, page_size: 100 })
+        items.push(...(data.results ?? data))
+        temProxima = !Array.isArray(data) &&
+          (Boolean(data.next) || (data.total_pages != null && page < data.total_pages))
+        page++
+      } while (temProxima)
+      return items
+    })
+  }
+
+  function getTarefasAtrasadas(projetoId, params = {}) {
+    return execute(async () => {
+      if (String(projetoAtualId.value) !== String(projetoId)) {
+        tarefas.value = []
+        tarefasAtrasadas.value = []
+        totalAtrasadas.value = 0
+        projetoAtualId.value = projetoId
+      }
+      const { data } = await tarefaService.getTarefasAtrasadas(projetoId, params)
+      if (String(projetoAtualId.value) === String(projetoId)) {
+        tarefasAtrasadas.value = data.results ?? data
+        totalAtrasadas.value = data.count ?? tarefasAtrasadas.value.length
+      }
+      return tarefasAtrasadas.value
+    })
+  }
+
   function getTarefasKanban(projetoId, statuses) {
     return execute(async () => {
       const requestVersion = ++version
@@ -148,13 +199,25 @@ export const useTarefaStore = defineStore('tarefa', () => {
               page,
             })
             if (requestVersion !== version) return []
-            items.push(
-              ...(data.results ?? data).map((item) => ({
-                ...item,
-                projeto: item.projeto ?? projetoId,
-                status: item.status ?? status.id,
-              })),
+            const tarefasColuna = await Promise.all(
+              (data.results ?? data).map(async (item) => {
+                let tarefa = item
+                // A listagem resumida não retorna a data de conclusão.
+                if (
+                  (item.situacao === 'concluida' || status.finaliza_task) &&
+                  item.concluido_em === undefined
+                ) {
+                  const { data: detalhes } = await tarefaService.getTarefa(item.id, projetoId)
+                  tarefa = { ...item, ...detalhes }
+                }
+                return {
+                  ...tarefa,
+                  projeto: tarefa.projeto ?? projetoId,
+                  status: tarefa.status ?? status.id,
+                }
+              }),
             )
+            items.push(...tarefasColuna)
             temProxima =
               !Array.isArray(data) &&
               (Boolean(data.next) || (data.total_pages != null && page < data.total_pages))
@@ -206,8 +269,11 @@ export const useTarefaStore = defineStore('tarefa', () => {
       const requestVersion = version
       await tarefaService.deleteTarefa(id, projetoId)
       if (requestVersion === version && String(projetoId) === String(projetoAtualId.value)) {
+        const eraAtrasada = tarefasAtrasadas.value.some((item) => item.id === id)
         tarefas.value = tarefas.value.filter((item) => item.id !== id)
+        tarefasAtrasadas.value = tarefasAtrasadas.value.filter((item) => item.id !== id)
         total.value = Math.max(0, total.value - 1)
+        if (eraAtrasada) totalAtrasadas.value = Math.max(0, totalAtrasadas.value - 1)
         if (tarefaAtual.value?.id === id) tarefaAtual.value = null
       }
     })
@@ -218,6 +284,8 @@ export const useTarefaStore = defineStore('tarefa', () => {
     resetTarefa()
     limparFiltros()
     tarefas.value = []
+    tarefasAtrasadas.value = []
+    totalAtrasadas.value = 0
     tarefaAtual.value = null
     projetoAtualId.value = null
     total.value = 0
@@ -232,6 +300,9 @@ export const useTarefaStore = defineStore('tarefa', () => {
     tarefasFiltradas,
     limparFiltros,
     getTarefasKanban,
+    tarefasAtrasadas,
+    totalAtrasadas,
+    getTarefasAtrasadas,
     tarefa,
     tarefas,
     tarefaAtual,
@@ -243,6 +314,7 @@ export const useTarefaStore = defineStore('tarefa', () => {
     error,
     porStatus,
     getTarefas,
+    getTarefasParaSelecao,
     getTarefa,
     createTarefa,
     updateTarefa,
@@ -252,3 +324,7 @@ export const useTarefaStore = defineStore('tarefa', () => {
 
   }
 })
+
+if (import.meta.hot) {
+  import.meta.hot.accept(acceptHMRUpdate(useTarefaStore, import.meta.hot))
+}
