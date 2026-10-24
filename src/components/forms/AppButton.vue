@@ -1,3 +1,4 @@
+
 <script setup>
 defineProps({
   variant: {
@@ -16,23 +17,43 @@ defineProps({
 </script>
 
 <template>
-  <button :type="type" :disabled="disabled" class="app-button" :class="`app-button--${variant}`">
+  <button
+    :type="type"
+    :disabled="disabled"
+    class="app-button"
+    :class="`app-button--${variant}`"
+  >
     <slot />
   </button>
 </template>
 
 <style scoped>
+.app-button--primary {
+  --button-background: var(--primaria, #01295f);
+  --button-text: #fff;
+  --button-hover-background: #fff;
+  --button-hover-text: var(--primaria, #01295f);
+}
+
+.app-button--secondary {
+  --button-background: #fff;
+  --button-text: var(--primaria, #01295f);
+  --button-hover-background: var(--primaria, #01295f);
+  --button-hover-text: #fff;
+}
+
 .app-button {
   position: relative;
   overflow: hidden;
   z-index: 0;
   width: 100%;
   height: 50px;
-  background: transparent !important;
-  color: var(--primaria, #00265c) !important;
+  flex-shrink: 0;
+  background: var(--button-background) !important;
+  color: var(--button-text) !important;
   font-size: 1.25rem;
   font-weight: 700;
-  border: 2px solid var(--primaria, #00265c) !important;
+  border: 2px solid var(--primaria, #01295f) !important;
   border-radius: 6px;
   cursor: pointer;
   transition: color 0.4s ease;
@@ -42,7 +63,7 @@ defineProps({
   content: '';
   position: absolute;
   inset: 0;
-  background: var(--primaria, #00265c);
+  background: var(--button-hover-background);
   transform: scaleX(0);
   transform-origin: left;
   transition: transform 0.4s ease;
@@ -52,8 +73,7 @@ defineProps({
 .app-button:hover:not(:disabled),
 .app-button:focus-visible:not(:disabled),
 .app-button:active:not(:disabled) {
-  color: #fff !important;
-  border-color: var(--primaria, #00265c) !important;
+  color: var(--button-hover-text) !important;
 }
 
 .app-button:hover:not(:disabled)::before,
@@ -63,7 +83,7 @@ defineProps({
 }
 
 .app-button:focus-visible {
-  outline: 2px solid var(--primaria, #00265c);
+  outline: 2px solid var(--primaria, #01295f);
   outline-offset: 2px;
 }
 
@@ -71,4 +91,5 @@ defineProps({
   opacity: 0.7;
   cursor: not-allowed;
 }
+
 </style>

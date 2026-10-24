@@ -1,5 +1,6 @@
 <script setup>
 import { computed, reactive, ref } from 'vue'
+import { prioridades } from '@/constants/prioridades'
 import { useUserStore } from '@/stores/userStore'
 import { useProjetoStore } from '@/stores/projetoStore'
 import { useStatusStore } from '@/stores/statusStore'
@@ -7,6 +8,7 @@ import { useCategoriaStore } from '@/stores/categoriaStore'
 import { useTarefaStore } from '@/stores/tarefaStore'
 import { useDocumentoStore } from '@/stores/documentoStore'
 import { usePedidoParticipacaoStore } from '@/stores/pedidoParticipacaoStore'
+import KanbanBoard from '@/components/kanban/KanbanBoard.vue'
 
 defineOptions({ name: 'ApiPlayground' })
 
@@ -503,6 +505,7 @@ function logout() {
 
 <template>
   <main class="playground">
+    <KanbanBoard />
     <header class="page-header">
       <div>
         <p class="eyebrow">Farol Flow</p>
@@ -921,8 +924,9 @@ function logout() {
             <label>
               Prioridade
               <select v-model="tarefaForm.prioridade">
-                <option value="baixa">Baixa</option><option value="media">Média</option>
-                <option value="alta">Alta</option><option value="urgente">Urgente</option>
+                <option v-for="(prioridade, valor) in prioridades" :key="valor" :value="valor">
+                  {{ prioridade.nome }}
+                </option>
               </select>
             </label>
             <label>
