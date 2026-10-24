@@ -16,7 +16,6 @@ const router = createRouter({
       path: '/',
       name: 'home',
       component: HomeView,
-      meta: { guestOnly: true },
     },
     {
       path: '/eventos',
@@ -67,14 +66,17 @@ const router = createRouter({
       redirect: (to) => {
         const id = to.params.id || to.query.id
         return id ? { name: 'config', params: { id } } : { name: 'eventos' }
-      },
+     },
+      name: 'config',
+      meta: { requiresAuth: true },
+      component: () => import('../components/atalhos/princiapalconfigComponent.vue'),
     },
     {
       path: '/perfil',
       name: 'perfil',
       component: () => import('../views/PerfilView.vue'),
       meta: { requiresAuth: true },
-    }
+    },
   ],
 })
 
