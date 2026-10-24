@@ -20,14 +20,16 @@ export const useProjetoStore = defineStore('projeto', () => {
   const loading = computed(() => pending.value > 0)
 
   const participantes = computed(() =>
-    (projetoAtual.value?.participacoes ?? []).map(({ usuario, cargo, entrou_em }) => ({
+    (projetoAtual.value?.participacoes ?? []).map(({ id: participacaoId, usuario, cargo, entrou_em }) => ({
       ...usuario,
+      participacaoId,
       cargo,
       entrou_em,
     })),
   )
   const meuCargo = computed(() => projetoAtual.value?.meu_cargo ?? null)
   const podeEditar = computed(() => ['fundador', 'organizador'].includes(meuCargo.value))
+
   const podeExcluir = computed(() => {
     const usuarioId = userStore.user?.id
     const criador = projetoAtual.value?.criador
@@ -37,6 +39,7 @@ export const useProjetoStore = defineStore('projeto', () => {
     )
   })
   const podeConfigurar = computed(() => podeExcluir.value || meuCargo.value === 'organizador')
+
 
   async function execute(action) {
     pending.value++
@@ -141,6 +144,25 @@ export const useProjetoStore = defineStore('projeto', () => {
     })
   }
 
+  function updateParticipante(participacaoId, cargo) {
+    return execute(async () => {
+      const { data } = await projetoService.updateParticipante(
+        projetoAtual.value.id, participacaoId, cargo,
+      )
+      atualizarCache(data)
+      return data
+    })
+  }
+
+  function deleteParticipante(participacaoId) {
+    return execute(async () => {
+      await projetoService.deleteParticipante(projetoAtual.value.id, participacaoId)
+      const { data } = await projetoService.getProjeto(projetoAtual.value.id)
+      atualizarCache(data)
+      return data
+    })
+  }
+
   function reset() {
     selecao++
     consultaAtual = null
@@ -157,6 +179,7 @@ export const useProjetoStore = defineStore('projeto', () => {
     projetos, projetoAtual, total, next, previous, loading, error,
     participantes, meuCargo, podeEditar, podeExcluir, podeConfigurar,
     getProjetos, getMeusProjetos, getProjeto, selecionarProjeto,
-    createProjeto, updateProjeto, deleteProjeto, updatePhoto, reset,
+    createProjeto, updateProjeto, deleteProjeto, updatePhoto,
+    updateParticipante, deleteParticipante, reset,
   }
 })

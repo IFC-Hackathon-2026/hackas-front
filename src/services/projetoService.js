@@ -38,11 +38,17 @@ export default class ProjetoService {
     return api.delete(`/projetos/${id}/`)
   }
 
+  updateParticipante(projetoId, participacaoId, cargo) {
+    return api.patch(`/projetos/${projetoId}/participantes/${participacaoId}/`, { cargo })
+  }
+
+  deleteParticipante(projetoId, participacaoId) {
+    return api.delete(`/projetos/${projetoId}/participantes/${participacaoId}/`)
+  }
+
   uploadImage(file) {
     const formData = new FormData()
     formData.append('file', file)
-    return api.post('/media/images/', formData, {
-      headers: { 'Content-Type': 'multipart/form-data' },
-    })
+    return api.post('/media/images/', formData)
   }
 }
