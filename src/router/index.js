@@ -28,6 +28,12 @@ const router = createRouter({
       component: () => import('../views/RegisterView.vue'),
       meta: { guestOnly: true },
     },
+    {
+      path: '/config/:id?',
+      name: 'config',
+      meta: { requiresAuth: true },
+      component: () => import('../components/configuracao-organizador/princiapalconfigComponent.vue')
+    },
   ],
 })
 

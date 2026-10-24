@@ -7,7 +7,7 @@ const route = useRoute();
 </script>
 
 <template>
-  <div class="app-layout">
+  <div class="app-layout" :class="{ 'config-layout': route.name === 'config' }">
     <AppHeaderComponent v-if="!route.meta.hideHeader" />
     <main class="app-content">
       <RouterView :class="{ 'no-header': route.meta.hideHeader }" />
@@ -28,6 +28,11 @@ const route = useRoute();
 .app-content {
   flex: 1;
   padding-inline: var(--page-padding);
+}
+
+.config-layout {
+  --fundo-claro: #fff;
+  background-color: #fff;
 }
 
 
