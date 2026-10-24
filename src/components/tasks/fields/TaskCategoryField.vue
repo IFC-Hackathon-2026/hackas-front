@@ -2,6 +2,7 @@
 import { computed, ref, watch } from 'vue'
 import { useCategoriaStore } from '@/stores/categoriaStore'
 import { apiErrorMessage as formatarErroApi } from '@/utils/apiErrorMessage'
+import { notificacao } from '@/services/notificacaoService'
 import TaskColorPicker from './TaskColorPicker.vue'
 import AppButton from '@/components/forms/AppButton.vue';
 
@@ -48,8 +49,10 @@ async function adicionarCategoria() {
     categoriasSelecionadas.push(categoria.id)
     nomeCategoria.value = ''
     mostrarOutraCategoria.value = false
+    notificacao.sucesso('Categoria criada com sucesso.')
   } catch (erro) {
     erroCategoria.value = formatarErroApi(erro, 'Não foi possível criar a categoria.')
+    notificacao.erro(erroCategoria.value)
   } finally {
     carregandoCategoria.value = false
   }

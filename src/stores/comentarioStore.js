@@ -1,5 +1,5 @@
 import { computed, ref } from 'vue'
-import { defineStore } from 'pinia'
+import { acceptHMRUpdate, defineStore } from 'pinia'
 import ComentarioService from '@/services/comentarioService'
 
 const comentarioService = new ComentarioService()
@@ -42,7 +42,7 @@ export const useComentarioStore = defineStore('comentario', () => {
     if (comentarioAtual.value?.id === comentario.id) comentarioAtual.value = comentario
   }
 
-  function getComentarios(tarefaId, params = {}) {
+  function getComentarios(tarefaId, params = {}, todas = false) {
     return execute(async () => {
       const requestVersion = ++version
       if (String(tarefaAtualId.value) !== String(tarefaId)) {
@@ -53,8 +53,18 @@ export const useComentarioStore = defineStore('comentario', () => {
         previous.value = null
       }
       tarefaAtualId.value = tarefaId
-      const { data } = await comentarioService.getComentarios(tarefaId, params)
-      const items = data.results ?? data
+      let { data } = await comentarioService.getComentarios(tarefaId, params)
+      const items = [...(data.results ?? data)]
+      let page = params.page ?? 1
+      while (
+        todas && !Array.isArray(data) &&
+        (data.next || (data.total_pages != null && page < data.total_pages))
+      ) {
+        if (requestVersion !== version) return items
+        page++
+        ;({ data } = await comentarioService.getComentarios(tarefaId, { ...params, page }))
+        items.push(...(data.results ?? data))
+      }
       if (requestVersion === version) {
         comentarios.value = items
         comentarioAtual.value = null
@@ -128,3 +138,7 @@ export const useComentarioStore = defineStore('comentario', () => {
     selecionarComentario, reset,
   }
 })
+
+if (import.meta.hot) {
+  import.meta.hot.accept(acceptHMRUpdate(useComentarioStore, import.meta.hot))
+}

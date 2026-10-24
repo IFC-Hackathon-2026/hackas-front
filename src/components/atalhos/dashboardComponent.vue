@@ -1,5 +1,6 @@
 
 <script setup>
+import { notificacao } from '@/services/notificacaoService'
 import { computed, onScopeDispose, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { useProjetoStore } from '@/stores/projetoStore'
@@ -173,6 +174,7 @@ async function carregar() {
       erro.value =
         error.response?.data?.detail ||
         'Não foi possível carregar o dashboard desta equipe.'
+      notificacao.erro(erro.value)
     }
   } finally {
     if (atual === consulta) {

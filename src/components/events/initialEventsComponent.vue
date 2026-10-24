@@ -8,6 +8,7 @@ import { apiErrorMessage } from '@/utils/apiErrorMessage'
 import { PROJECT_CATEGORIES, PROJECT_CATEGORY_LABELS, PROJECT_CATEGORY_STYLES } from '@/constants/projectCategories'
 import ProjetoService from '@/services/projetoService'
 import { useProjetoStore } from '@/stores/projetoStore'
+import { notificacao } from '@/services/notificacaoService'
 
 const projetoStore = useProjetoStore()
 const router = useRouter()
@@ -121,16 +122,16 @@ const tituloFiltro = computed(() => {
 
 async function carregarProjetos() {
   try {
-  await projetoStore.getProjetos({
-    meus: abaEventos.value === 'meus' ? 'true' : undefined,
-    search: buscaProjeto.value.trim() || undefined,
-    categorias: categoriasSelecionadas.value.length
-      ? categoriasSelecionadas.value
-      : undefined,
-    page_size: 100,
-  })
+    await projetoStore.getProjetos({
+      meus: abaEventos.value === 'meus' ? 'true' : undefined,
+      search: buscaProjeto.value.trim() || undefined,
+      categorias: categoriasSelecionadas.value.length
+        ? categoriasSelecionadas.value
+        : undefined,
+      page_size: 100,
+    })
   } catch {
-    // A store mantém a mensagem de erro exibida na listagem.
+    notificacao.erro('Não foi possível carregar os eventos.')
   }
 }
 
