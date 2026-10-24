@@ -30,6 +30,7 @@ watch(visible, syncVisibility);
     <dialog
       ref="dialog"
       class="app-modal"
+      :aria-label="props.title"
       @cancel.prevent="visible = false"
       @close="visible = false"
     >

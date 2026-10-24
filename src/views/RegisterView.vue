@@ -30,7 +30,7 @@ async function register() {
   loading.value = true
   try {
     await userStore.register(user.email, user.password, user.name, user.foto)
-    await router.replace({ name: 'home' })
+    await router.replace({ name: 'eventos' })
   } catch {
     erroMessage.value = 'Não foi possível fazer o cadastro. Tente novamente.'
   } finally {

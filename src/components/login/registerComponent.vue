@@ -1,14 +1,14 @@
 <script setup>
 import { reactive, ref } from 'vue'
-import { useRouter } from 'vue-router'
-import { useUserStore } from '@/stores/userStore.js'
+import { useUserStore } from '@/stores/userStore'
 import appArrow from '../layout/appArrow.vue'
 import AppInput from '@/components/forms/AppInput.vue'
 import AppButton from '@/components/forms/AppButton.vue'
 import StepIndicator from '../layout/StepIndicator.vue'
 
 const userStore = useUserStore()
-const router = useRouter()
+
+const emit = defineEmits(['ir-para-login', 'cadastro-sucesso'])
 
 const user = reactive({
   email: '',
@@ -24,23 +24,26 @@ const erroMessage = ref('')
 
 async function register() {
   if (loading.value) return
+
   erroMessage.value = ''
+
   if (user.password !== confirmPassword.value) {
     erroMessage.value = 'As senhas não coincidem.'
     return
   }
+
   loading.value = true
+
   try {
     await userStore.register(user.email, user.password, user.name, user.foto)
-    await router.replace({ name: 'home' })
+
+    emit('cadastro-sucesso')
   } catch {
     erroMessage.value = 'Não foi possível fazer o cadastro. Tente novamente.'
   } finally {
     loading.value = false
   }
 }
-
-const emit = defineEmits(['ir-para-login'])
 </script>
 
 <template>
@@ -195,7 +198,6 @@ const emit = defineEmits(['ir-para-login'])
   flex-direction: column;
 }
 
-/* Visual do AppInput dentro do cadastro */
 .register-form :deep(.label-class) {
   font-weight: 700;
   font-size: 1.05rem;
@@ -229,7 +231,6 @@ const emit = defineEmits(['ir-para-login'])
   margin: 0 0 1rem;
 }
 
-/* Indicador de etapas */
 .steps {
   display: flex;
   align-items: flex-start;
