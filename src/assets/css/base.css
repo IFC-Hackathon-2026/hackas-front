@@ -23,7 +23,7 @@ body {
   /* 4. Increase line-height */
   font-family: 'Poppins', sans-serif;
   background-color: var(--fundo-claro);
-  color: var(--azul-escuro);
+  color: var(--texto);
   margin: 0;
   line-height: 1.5;
   /* 5. Improve text rendering */
@@ -57,6 +57,7 @@ p {
 }
 h1, h2, h3, h4, h5, h6 {
   text-wrap: balance;
+  color: var(--azul-escuro);
 }
 
 /*
@@ -64,10 +65,24 @@ h1, h2, h3, h4, h5, h6 {
 */
 :root {
   --primaria: #01295F;
+  --texto: #141414;
   --fundo-claro: #F6F6F2;
   --azul-escuro: #001228;
   --azul-claro: #2767AA;
   --laranja: #E53D00;
   --amarelo: #FFBE33;
   --verde: #429E5E;
+}
+
+html:has(.app-modal[open]),
+body:has(.app-modal[open]) {
+  overflow: hidden;
+}
+html,
+body,
+#app {
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  padding: 0;
 }

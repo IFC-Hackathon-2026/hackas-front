@@ -7,6 +7,7 @@ const props = defineProps({
     type: String,
     placeholder: String,
     required: Boolean,
+    icon: String,
 });
 
 const emit = defineEmits(['update:modelValue', 'focus', 'blur']);
@@ -29,13 +30,14 @@ const value = computed({
             <span v-if="required" class="required">*</span>
         </label>
         <div class="input-wrapper">
+        <span v-if="icon" class="input-icon mdi" :class="icon" aria-hidden="true"></span>
         <input
             v-model="value"
             :type="inputType"
             :placeholder="placeholder"
             :required="required"
             class="input-class"
-            :class="{ 'input-class--password': isPassword }"
+            :class="{ 'input-class--password': isPassword, 'input-class--icon': icon }"
             @focus="$emit('focus')"
             @blur="$emit('blur')"
         >
@@ -59,10 +61,15 @@ const value = computed({
     margin-bottom: 4vw;
 }
 
-.label-class{
+.label-class {
     display: block;
     margin-bottom: 10px;
     font-weight: 500;
+    transition: color .3s ease;
+}
+
+.app-input:focus-within .label-class {
+    color: var(--primaria, #00265c);
 }
 
 .input-class {
@@ -73,21 +80,39 @@ const value = computed({
     width: 100%;
     border-radius: 5px;
     font-family: 'Poppins';
-    transition: all .3s;
+    transition: border-color .3s ease, box-shadow .3s ease;
 }
 
-.input-class:focus {
-    outline: none;
-    border: 2px solid #171717 ;
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+.input-class:hover {
+    border-color: #5b7399;
 }
 
 .input-wrapper {
     position: relative;
 }
 
+.input-icon {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 22px;
+    color: var(--primaria, #00265c);
+    pointer-events: none;
+}
+
+.input-class--icon {
+    padding-left: 42px;
+}
+
 .input-class--password {
-    padding-right: 3rem;
+    padding-right: 2.75rem;
+}
+
+.input-class:focus {
+    outline: none;
+    border-color: var(--primaria, #00265c);
+    box-shadow: 0 0 0 4px rgba(0, 38, 92, 0.12);
 }
 
 .password-toggle {
@@ -105,14 +130,15 @@ const value = computed({
     background: transparent;
     color: #525252;
     cursor: pointer;
+    transition: color .3s ease;
 }
 
 .password-toggle:hover {
-    color: #171717;
+    color: var(--primaria, #00265c);
 }
 
 .password-toggle:focus-visible {
-    outline: 2px solid #171717;
+    outline: 2px solid var(--primaria, #00265c);
     outline-offset: -4px;
 }
 

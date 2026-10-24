@@ -17,7 +17,7 @@ import LogoDark from '/FarolFlow-logo-dark.svg'
       </div>
 
       <div>
-        <h4>Atendimento</h4>
+        <h4 style="color: var(--fundo-claro);">Atendimento</h4>
         <ul class="infos-list">
           <li>
             <span class="mdi mdi-clock-outline"></span>
@@ -30,7 +30,7 @@ import LogoDark from '/FarolFlow-logo-dark.svg'
       </div>
 
       <div>
-        <h4>Contato</h4>
+        <h4 style="color: var(--fundo-claro);">Contato</h4>
         <ul class="infos-list">
           <li>
             <span class="mdi mdi-phone"></span>
@@ -52,6 +52,7 @@ import LogoDark from '/FarolFlow-logo-dark.svg'
 
 <style scoped>
 .app-footer {
+  margin-top: 2rem;
   background-color: var(--primaria);
   flex-shrink: 0;
   color: var(--fundo-claro);
@@ -105,5 +106,32 @@ h4 {
     grid-template-columns: 1fr;
     gap: 2rem;
   }
+}
+
+@media (max-width: 600px) {
+  .footer-content {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 1.75rem;
+    font-size: 0.875rem;
+  }
+  .footer-brand img {
+    max-width: 120px;
+  }
+  .infos-list li {
+    min-width: 100%;
+  }
+  h4 {
+    margin-bottom: 0.75rem;
+  }
+}
+
+@media (max-width: 600px) {
+  .app-footer { padding-block: 0.875rem; margin-top: 0.75rem; }
+  .footer-content { gap: 0.75rem; font-size: 0.6875rem; line-height: 1.4; }
+  .footer-brand { gap: 0.5rem; }
+  .footer-brand img { max-width: 76px; }
+  h4 { margin-bottom: 0.25rem; font-size: 0.75rem; }
+  .infos-list { gap: 0.25rem; }
 }
 </style>
