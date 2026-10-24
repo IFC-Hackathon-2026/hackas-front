@@ -16,6 +16,8 @@ const statusStore = useStatusStore()
 const categoriaStore = useCategoriaStore()
 const selectedProject = ref(projetoStore.projetoAtual?.id ?? '')
 const showModal = ref(false)
+const openingTask = ref(false)
+const taskError = ref('')
 const loading = ref(false)
 const error = ref('')
 const notice = ref('')
@@ -134,14 +136,42 @@ async function loadProjects() {
   }
 }
 onMounted(loadProjects)
-function openTask(statusId) {
-  if (loading.value || tarefaStore.loading || !selectedProject.value) return
+function newTask(statusId) {
+  if (loading.value || openingTask.value || tarefaStore.loading || !selectedProject.value) return
   tarefaStore.resetTarefa(Number(selectedProject.value), statusId)
   showModal.value = true
 }
+async function openTask(taskId) {
+  if (loading.value || openingTask.value || showModal.value || !selectedProject.value) return
+  const projectId = selectedProject.value
+  const current = request
+  openingTask.value = true
+  taskError.value = ''
+  try {
+    const task = await tarefaStore.getTarefa(taskId, projectId)
+    if (current !== request) return
+    tarefaStore.tarefa = {
+      ...task,
+      categoria: [...(task.categoria ?? [])],
+      responsavel: [...(task.responsavel ?? [])],
+    }
+    showModal.value = true
+  } catch {
+    if (current === request) taskError.value = 'Não foi possível abrir a tarefa. Tente novamente.'
+  } finally {
+    openingTask.value = false
+  }
+}
+async function deleted() {
+  showModal.value = false
+  notice.value = 'Tarefa excluída com sucesso.'
+  await buscarTarefas()
+}
 async function saved() {
   showModal.value = false
-  notice.value = 'Tarefa criada com sucesso.'
+  notice.value = tarefaStore.tarefa.id
+    ? 'Tarefa atualizada com sucesso.'
+    : 'Tarefa criada com sucesso.'
   await buscarTarefas()
 }
 </script>
@@ -185,9 +215,20 @@ async function saved() {
     </div>
     <p v-else-if="!selectedProject">Selecione um projeto para ver as tarefas.</p>
     <p v-else-if="!kabanCategories.length">Este projeto ainda não possui status cadastrados.</p>
-    <KanbanColumn v-else :kaban-categories="kabanCategories" :tasks="tasks" @add-task="openTask" />
-    <AppModal v-model:visible="showModal" title="Nova tarefa">
-      <TaskForm v-if="showModal" @saved="saved" />
+    <KanbanColumn
+      v-else
+      :kaban-categories="kabanCategories"
+      :tasks="tasks"
+      @add-task="newTask"
+      @open-task="openTask"
+    />
+    <p v-if="openingTask" role="status">Carregando tarefa…</p>
+    <p v-if="taskError" role="alert">{{ taskError }}</p>
+    <AppModal
+      v-model:visible="showModal"
+      :title="tarefaStore.tarefa.id ? 'Editar tarefa' : 'Nova tarefa'"
+    >
+      <TaskForm v-if="showModal" @saved="saved" @deleted="deleted" />
     </AppModal>
   </section>
 </template>

@@ -42,6 +42,14 @@ defineProps({
   --button-hover-text: #fff;
 }
 
+.app-button--danger {
+  --button-background: #fff;
+  --button-text: #b91c1c;
+  --button-hover-background: #b91c1c;
+  --button-hover-text: #fff;
+  --button-border: #b91c1c;
+}
+
 .app-button {
   position: relative;
   overflow: hidden;
@@ -53,7 +61,7 @@ defineProps({
   color: var(--button-text) !important;
   font-size: 1.25rem;
   font-weight: 700;
-  border: 2px solid var(--primaria, #01295f) !important;
+  border: 2px solid var(--button-border, var(--primaria, #01295f)) !important;
   border-radius: 6px;
   cursor: pointer;
   transition: color 0.4s ease;
@@ -83,7 +91,7 @@ defineProps({
 }
 
 .app-button:focus-visible {
-  outline: 2px solid var(--primaria, #01295f);
+  outline: 2px solid var(--button-border, var(--primaria, #01295f));
   outline-offset: 2px;
 }
 
