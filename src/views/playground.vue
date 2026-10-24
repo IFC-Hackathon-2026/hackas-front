@@ -1,10 +1,16 @@
 <script setup>
 import { computed, reactive, ref } from 'vue'
+import { notificacao } from '@/services/notificacaoService'
+import { prioridades } from '@/constants/prioridades'
 import { useUserStore } from '@/stores/userStore'
 import { useProjetoStore } from '@/stores/projetoStore'
 import { useStatusStore } from '@/stores/statusStore'
 import { useCategoriaStore } from '@/stores/categoriaStore'
+import { PROJECT_CATEGORIES } from '@/constants/projectCategories'
 import { useTarefaStore } from '@/stores/tarefaStore'
+import { useComentarioStore } from '@/stores/comentarioStore'
+import { useDocumentoStore } from '@/stores/documentoStore'
+import { usePedidoParticipacaoStore } from '@/stores/pedidoParticipacaoStore'
 
 defineOptions({ name: 'ApiPlayground' })
 
@@ -13,7 +19,10 @@ const projetoStore = useProjetoStore()
 const statusStore = useStatusStore()
 const categoriaStore = useCategoriaStore()
 const tarefaStore = useTarefaStore()
-const projetoForm = reactive({ nome: '', descricao: '' })
+const comentarioStore = useComentarioStore()
+const documentoStore = useDocumentoStore()
+const pedidoStore = usePedidoParticipacaoStore()
+const projetoForm = reactive({ nome: '', descricao: '', categorias: [] })
 const projetoFiltros = reactive({ search: '', meus: true, page: 1 })
 const projetoId = ref('')
 const projetoPhoto = ref(null)
@@ -25,21 +34,49 @@ const tarefaForm = reactive({
 const statusSelecionadoId = ref('')
 const categoriaSelecionadaId = ref('')
 const tarefaSelecionadaId = ref('')
+const comentarioSelecionadoId = ref('')
+const comentarioForm = reactive({ conteudo: '' })
+const somenteTarefasAtrasadas = ref(false)
+const documentoSelecionadoId = ref('')
+const documentoArquivo = ref(null)
+const documentoBusca = ref('')
+const documentoForm = reactive({ nome: '', tarefa: '', description: '' })
+const pedidoFiltros = reactive({ status: 'pendente', tipo: '', projeto: '' })
+const conviteUsuarioId = ref('')
 
 const projetoSelecionadoId = computed(() => projetoStore.projetoAtual?.id ?? null)
 
 async function carregarDadosProjeto() {
   const id = projetoSelecionadoId.value
   if (!id) throw new Error('Selecione um projeto primeiro.')
+  tarefaSelecionadaId.value = ''
+  comentarioSelecionadoId.value = ''
+  comentarioForm.conteudo = ''
+  comentarioStore.reset()
   const resultado = await run(
     () => Promise.all([
       statusStore.getStatuses(id),
       categoriaStore.getCategorias(id),
-      tarefaStore.getTarefas(id, { page_size: 100 }),
+      tarefaStore.getTarefas(id, {
+        page_size: 100,
+        atrasadas: somenteTarefasAtrasadas.value ? 'true' : undefined,
+      }),
+      tarefaStore.getTarefasAtrasadas(id, { page_size: 100 }),
+      documentoStore.getDocumentos(id, { page_size: 100 }),
     ]),
-    'Status, categorias e tarefas carregados.',
+    'Status, categorias, tarefas e documentos carregados.',
   )
   if (resultado && !tarefaForm.status) tarefaForm.status = statusStore.statusInicial?.id ?? ''
+}
+
+async function listarTarefas() {
+  await run(
+    () => tarefaStore.getTarefas(projetoSelecionadoId.value, {
+      page_size: 100,
+      atrasadas: somenteTarefasAtrasadas.value ? 'true' : undefined,
+    }),
+    somenteTarefasAtrasadas.value ? 'Tarefas atrasadas carregadas.' : 'Todas as tarefas carregadas.',
+  )
 }
 
 async function salvarStatus(criar) {
@@ -106,28 +143,165 @@ async function salvarTarefa(criar) {
       : tarefaStore.updateTarefa(tarefaSelecionadaId.value, projetoId, tarefaPayload()),
     criar ? 'Tarefa criada.' : 'Tarefa atualizada.',
   )
-  if (tarefa) selecionarTarefa(tarefa)
+  if (tarefa) {
+    await selecionarTarefa(tarefa)
+    await Promise.all([
+      projetoStore.getProjeto(projetoId),
+      userStore.getMe(),
+    ])
+  }
 }
 
-function selecionarTarefa(tarefa) {
-  tarefaSelecionadaId.value = tarefa.id
+async function selecionarTarefa(tarefa) {
+  const tarefaCompleta = tarefa.descricao === undefined
+    ? await run(
+      () => tarefaStore.getTarefa(tarefa.id, projetoSelecionadoId.value),
+      'Detalhes da tarefa carregados.',
+    )
+    : tarefa
+  if (!tarefaCompleta) return
+  tarefaSelecionadaId.value = tarefaCompleta.id
   Object.assign(tarefaForm, {
-    titulo: tarefa.titulo ?? '',
-    descricao: tarefa.descricao ?? '',
-    prioridade: tarefa.prioridade ?? 'media',
-    status: typeof tarefa.status === 'object' ? tarefa.status.id : tarefa.status,
-    prazo: tarefa.prazo ? tarefa.prazo.slice(0, 16) : '',
-    categoria: (tarefa.categoria ?? []).map((item) => typeof item === 'object' ? item.id : item),
-    responsavel: (tarefa.responsavel ?? []).map((item) => typeof item === 'object' ? item.id : item),
+    titulo: tarefaCompleta.titulo ?? '',
+    descricao: tarefaCompleta.descricao ?? '',
+    prioridade: tarefaCompleta.prioridade ?? 'media',
+    status: typeof tarefaCompleta.status === 'object' ? tarefaCompleta.status.id : tarefaCompleta.status,
+    prazo: tarefaCompleta.prazo ? tarefaCompleta.prazo.slice(0, 16) : '',
+    categoria: (tarefaCompleta.categoria ?? []).map((item) => typeof item === 'object' ? item.id : item),
+    responsavel: (tarefaCompleta.responsavel ?? []).map((item) => typeof item === 'object' ? item.id : item),
   })
+  comentarioSelecionadoId.value = ''
+  comentarioForm.conteudo = ''
+  await run(
+    () => comentarioStore.getComentarios(tarefaCompleta.id, { page_size: 100 }),
+    'Tarefa e comentários carregados.',
+  )
+}
+
+function selecionarComentario(comentario) {
+  comentarioStore.selecionarComentario(comentario)
+  comentarioSelecionadoId.value = comentario.id
+  comentarioForm.conteudo = comentario.conteudo
+}
+
+function cancelarEdicaoComentario() {
+  comentarioSelecionadoId.value = ''
+  comentarioForm.conteudo = ''
+  comentarioStore.selecionarComentario(null)
+}
+
+function podeAlterarComentario(comentario) {
+  return String(comentario.autor?.id) === String(userStore.user?.id)
+}
+
+async function salvarComentario(criar) {
+  const comentario = await run(
+    () => criar
+      ? comentarioStore.createComentario(tarefaSelecionadaId.value, comentarioForm)
+      : comentarioStore.updateComentario(
+        comentarioSelecionadoId.value,
+        tarefaSelecionadaId.value,
+        comentarioForm,
+      ),
+    criar ? 'Comentário publicado.' : 'Comentário atualizado.',
+  )
+  if (comentario) cancelarEdicaoComentario()
+}
+
+async function excluirComentario(comentario) {
+  if (!window.confirm('Excluir este comentário?')) return
+  const excluido = await run(
+    () => comentarioStore.deleteComentario(comentario.id, tarefaSelecionadaId.value),
+    'Comentário excluído.',
+  )
+  if (excluido !== null && comentarioSelecionadoId.value === comentario.id) {
+    cancelarEdicaoComentario()
+  }
+}
+
+async function carregarTarefasAtrasadas() {
+  await run(
+    () => tarefaStore.getTarefasAtrasadas(projetoSelecionadoId.value, { page_size: 100 }),
+    'Tarefas atrasadas carregadas.',
+  )
+}
+
+function nomeSituacao(situacao) {
+  return { pendente: 'Pendente', atrasada: 'Atrasada', concluida: 'Concluída' }[situacao] ?? situacao
 }
 
 async function excluirTarefa() {
-  await run(
+  const excluida = await run(
     () => tarefaStore.deleteTarefa(tarefaSelecionadaId.value, projetoSelecionadoId.value),
     'Tarefa excluída.',
   )
+  if (excluida !== null) {
+    await Promise.all([
+      projetoStore.getProjeto(projetoSelecionadoId.value),
+      userStore.getMe(),
+    ])
+  }
   tarefaSelecionadaId.value = ''
+  comentarioStore.reset()
+  cancelarEdicaoComentario()
+}
+
+async function listarDocumentos() {
+  await run(
+    () => documentoStore.getDocumentos(projetoSelecionadoId.value, {
+      page_size: 100,
+      search: documentoBusca.value,
+    }),
+    'Documentos carregados.',
+  )
+}
+
+async function criarDocumento() {
+  if (!documentoArquivo.value) {
+    error.value = 'Selecione um arquivo PDF.'
+    notificacao.aviso(error.value)
+    return
+  }
+  const documento = await run(
+    () => documentoStore.uploadAndCreate({
+      file: documentoArquivo.value,
+      nome: documentoForm.nome,
+      tarefa: documentoForm.tarefa,
+      description: documentoForm.description,
+    }),
+    'Documento enviado e vinculado à tarefa.',
+  )
+  if (documento) selecionarDocumento(documento)
+}
+
+async function atualizarDocumento() {
+  const documento = await run(
+    () => documentoStore.updateDocumento(documentoSelecionadoId.value, {
+      nome: documentoForm.nome,
+      tarefa: documentoForm.tarefa,
+    }),
+    'Documento atualizado.',
+  )
+  if (documento) selecionarDocumento(documento)
+}
+
+function selecionarDocumento(documento) {
+  documentoSelecionadoId.value = documento.id
+  documentoForm.nome = documento.nome ?? ''
+  documentoForm.tarefa = documento.tarefa_origem?.id ?? ''
+  documentoForm.description = documento.arquivo?.description ?? ''
+}
+
+async function excluirDocumento() {
+  await run(
+    () => documentoStore.deleteDocumento(documentoSelecionadoId.value),
+    'Documento excluído.',
+  )
+  documentoSelecionadoId.value = ''
+}
+
+function selecionarArquivoDocumento(event) {
+  documentoArquivo.value = event.target.files?.[0] ?? null
 }
 
 async function listarProjetos() {
@@ -138,12 +312,71 @@ async function listarProjetos() {
   }), 'Projetos carregados.')
 }
 
+async function solicitarEntrada(projeto) {
+  const pedido = await run(
+    () => pedidoStore.solicitarEntrada(projeto.id),
+    `Solicitação enviada para o projeto “${projeto.nome}”.`,
+  )
+  if (pedido) await userStore.getMe()
+}
+
+async function listarPedidos() {
+  const params = {
+    status: pedidoFiltros.status || undefined,
+    tipo: pedidoFiltros.tipo || undefined,
+    projeto: pedidoFiltros.projeto || undefined,
+    page_size: 100,
+  }
+  await run(() => pedidoStore.getPedidos(params), 'Pedidos e convites carregados.')
+}
+
+async function carregarMeusConvites() {
+  Object.assign(pedidoFiltros, { status: 'pendente', tipo: 'convite', projeto: '' })
+  await listarPedidos()
+}
+
+async function convidarUsuario() {
+  const projeto = projetoStore.projetoAtual
+  const pedido = await run(
+    () => pedidoStore.convidarUsuario(projeto.id, conviteUsuarioId.value),
+    'Convite enviado ao usuário.',
+  )
+  if (pedido) conviteUsuarioId.value = ''
+}
+
+function cargoNoProjeto(projetoId) {
+  if (String(projetoStore.projetoAtual?.id) === String(projetoId)) return projetoStore.meuCargo
+  return projetoStore.projetos.find((item) => String(item.id) === String(projetoId))?.meu_cargo
+}
+
+function podeResponderPedido(pedido) {
+  if (pedido.status !== 'pendente') return false
+  if (pedido.tipo === 'convite') return pedido.usuario_detalhe?.id === userStore.user?.id
+  return ['fundador', 'organizador'].includes(cargoNoProjeto(pedido.projeto_detalhe?.id))
+}
+
+async function responderPedido(pedido, aceitar) {
+  const resultado = await run(
+    () => aceitar ? pedidoStore.aceitarPedido(pedido.id) : pedidoStore.recusarPedido(pedido.id),
+    aceitar ? 'Pedido aceito.' : 'Pedido recusado.',
+  )
+  if (resultado && aceitar) {
+    const atualId = projetoStore.projetoAtual?.id
+    await Promise.all([
+      userStore.getMe(),
+      projetoStore.getProjetos({ meus: 'true' }),
+      atualId ? projetoStore.selecionarProjeto(atualId) : Promise.resolve(),
+    ])
+  }
+}
+
 async function consultarProjeto(id = projetoId.value) {
   const projeto = await run(() => projetoStore.selecionarProjeto(id), 'Projeto carregado.')
   if (projeto) {
     projetoId.value = projeto.id
     projetoForm.nome = projeto.nome
     projetoForm.descricao = projeto.descricao
+    projetoForm.categorias = [...(projeto.categorias ?? [])]
     await carregarDadosProjeto()
   }
 }
@@ -166,7 +399,23 @@ async function excluirProjeto() {
     projetoId.value = ''
     projetoForm.nome = ''
     projetoForm.descricao = ''
+    projetoForm.categorias = []
   }, 'Projeto excluído.')
+}
+
+async function alterarCargoParticipante(participante, cargo) {
+  await run(
+    () => projetoStore.updateParticipante(participante.participacaoId, cargo),
+    cargo === 'organizador' ? 'Membro promovido a organizador.' : 'Organizador alterado para membro.',
+  )
+}
+
+async function removerParticipante(participante) {
+  if (!window.confirm(`Remover ${participante.name || participante.email} do projeto?`)) return
+  await run(
+    () => projetoStore.deleteParticipante(participante.participacaoId),
+    'Participante removido do projeto.',
+  )
 }
 
 const loginForm = reactive({ email: '', password: '' })
@@ -195,8 +444,32 @@ function resolveMediaUrl(url) {
 
 function getErrorMessage(requestError) {
   const data = requestError.response?.data
-  if (data) return JSON.stringify(data, null, 2)
-  return requestError.message ?? 'Erro desconhecido'
+  const stage = requestError.documentoStage ? `Falha no ${requestError.documentoStage}:\n` : ''
+  if (typeof data === 'string' && data.trimStart().startsWith('<!DOCTYPE html>')) {
+    const status = requestError.response?.status
+    const endpoint = requestError.config?.url ?? 'endpoint solicitado'
+    return `${stage}A API respondeu ${status ?? 'com erro'} para ${endpoint}. Verifique se a versão atual do back foi publicada.`
+  }
+  if (data) return `${stage}${JSON.stringify(data, null, 2)}`
+  return `${stage}${requestError.message ?? 'Erro desconhecido'}`
+}
+
+async function carregarSessao() {
+  Object.assign(pedidoFiltros, { status: 'pendente', tipo: '', projeto: '' })
+  const resultados = await Promise.allSettled([
+    pedidoStore.getPendentes({ page_size: 100 }),
+    projetoStore.getProjetos({ meus: 'false', page_size: 100 }),
+  ])
+  const [pedidos, projetos] = resultados
+  if (pedidos.status === 'rejected') {
+    const status = pedidos.reason.response?.status
+    message.value = `Login realizado. A API de convites respondeu ${status ?? 'com erro'}; verifique o deploy e a migration 0017.`
+    notificacao.aviso(message.value)
+  }
+  if (projetos.status === 'rejected') {
+    error.value = getErrorMessage(projetos.reason)
+    notificacao.erro(error.value)
+  }
 }
 
 async function run(action, successMessage) {
@@ -207,9 +480,11 @@ async function run(action, successMessage) {
   try {
     const result = await action()
     message.value = successMessage
+    if (successMessage) notificacao.sucesso(successMessage)
     return result
   } catch (requestError) {
     error.value = getErrorMessage(requestError)
+    notificacao.erro(error.value)
     return null
   } finally {
     loading.value = false
@@ -217,23 +492,36 @@ async function run(action, successMessage) {
 }
 
 async function login() {
-  await run(
-    () => userStore.login(loginForm.email, loginForm.password),
+  const usuario = await run(async () => {
+    pedidoStore.reset()
+    projetoStore.reset()
+    statusStore.reset()
+    categoriaStore.reset()
+    tarefaStore.reset()
+    comentarioStore.reset()
+    documentoStore.reset()
+    return userStore.login(loginForm.email, loginForm.password)
+  },
     'Login realizado e usuário carregado.',
   )
+  if (usuario) await carregarSessao()
 }
 
 async function register() {
-  await run(
-    () =>
-      userStore.register(
+  const usuario = await run(async () => {
+      await userStore.register(
         registerForm.email,
         registerForm.password,
         registerForm.name,
         registerForm.foto,
-      ),
+      )
+      pedidoStore.reset()
+      projetoStore.reset()
+      return userStore.user
+    },
     'Usuário cadastrado e autenticado.',
   )
+  if (usuario) await carregarSessao()
 }
 
 async function loadMe() {
@@ -254,6 +542,7 @@ async function updateProfile() {
 async function updatePhoto() {
   if (!profilePhoto.value) {
     error.value = 'Selecione uma imagem PNG ou JPEG.'
+    notificacao.aviso(error.value)
     return
   }
 
@@ -285,8 +574,12 @@ function logout() {
   statusStore.reset()
   categoriaStore.reset()
   tarefaStore.reset()
+  comentarioStore.reset()
+  documentoStore.reset()
+  pedidoStore.reset()
   selectedUser.value = null
   message.value = 'Sessão encerrada.'
+  notificacao.informacao(message.value)
   error.value = ''
 }
 </script>
@@ -393,6 +686,12 @@ function logout() {
             <small>ID: {{ userStore.user.id }}</small>
           </div>
         </div>
+        <p v-if="userStore.user">
+          Tarefas do perfil — progresso: {{ userStore.resumoTarefas.progresso }}% ·
+          concluídas: {{ userStore.resumoTarefas.concluidas }} ·
+          não concluídas: {{ userStore.resumoTarefas.nao_concluidas }} ·
+          atrasadas: {{ userStore.resumoTarefas.atrasadas }}
+        </p>
         <p v-else>Nenhum usuário foi carregado.</p>
         <pre>{{ JSON.stringify(userStore.user, null, 2) }}</pre>
       </section>
@@ -451,7 +750,15 @@ function logout() {
                   <td>{{ projeto.id }}</td><td>{{ projeto.nome }}</td>
                   <td>{{ projeto.meu_cargo || 'Sem participação' }}</td>
                   <td>{{ projeto.total_participantes }}</td>
-                  <td><button type="button" @click="consultarProjeto(projeto.id)">Selecionar</button></td>
+                  <td>
+                    <button type="button" @click="consultarProjeto(projeto.id)">Selecionar</button>
+                    <button
+                      v-if="!projeto.meu_cargo"
+                      type="button"
+                      class="small"
+                      @click="solicitarEntrada(projeto)"
+                    >Pedir entrada</button>
+                  </td>
                 </tr>
                 <tr v-if="!projetoStore.projetos.length"><td colspan="5">Nenhum projeto na listagem.</td></tr>
               </tbody>
@@ -471,6 +778,36 @@ function logout() {
           <form @submit.prevent="salvarProjeto(true)">
             <label>Nome<input v-model="projetoForm.nome" maxlength="150" required /></label>
             <label>Descrição<textarea v-model="projetoForm.descricao" rows="4"></textarea></label>
+            <fieldset class="category-picker">
+              <legend>Filtros fixos do projeto</legend>
+              <p><code>categorias</code> define em quais filtros o projeto aparece.</p>
+              <template v-for="categoria in PROJECT_CATEGORIES" :key="categoria.value">
+                <div v-if="categoria.selectable === false" class="checkbox-label" :style="{ backgroundColor: categoria.color }">
+                  <strong>{{ categoria.label }}</strong>
+                </div>
+                <label v-else class="checkbox-label" :style="{ backgroundColor: categoria.color }">
+                  <input v-model="projetoForm.categorias" type="checkbox" :value="categoria.value" />
+                  {{ categoria.label }}
+                </label>
+                <template
+                  v-for="subcategoria in categoria.children"
+                  :key="subcategoria.value"
+                >
+                  <label class="checkbox-label category-child" :style="subcategoria.color ? { backgroundColor: subcategoria.color } : null">
+                    <input v-model="projetoForm.categorias" type="checkbox" :value="subcategoria.value" />
+                    {{ subcategoria.label }}
+                  </label>
+                  <label
+                    v-for="item in subcategoria.children"
+                    :key="item.value"
+                    class="checkbox-label category-grandchild"
+                  >
+                    <input v-model="projetoForm.categorias" type="checkbox" :value="item.value" />
+                    {{ item.label }}
+                  </label>
+                </template>
+              </template>
+            </fieldset>
             <button>Criar novo projeto</button>
             <button type="button" :disabled="!projetoStore.podeEditar || !projetoForm.nome.trim()" @click="salvarProjeto(false)">Salvar no projeto selecionado</button>
           </form>
@@ -482,6 +819,21 @@ function logout() {
             <p>{{ projetoStore.projetoAtual.nome }} · ID {{ projetoStore.projetoAtual.id }}</p>
             <p>Cargo: {{ projetoStore.meuCargo || 'Sem participação' }}</p>
             <p>Pode editar: {{ projetoStore.podeEditar ? 'Sim' : 'Não' }} · Pode excluir: {{ projetoStore.podeExcluir ? 'Sim' : 'Não' }}</p>
+            <template v-if="projetoStore.projetoAtual.resumo_tarefas">
+              <h4 class="spaced">Resumo do dashboard</h4>
+              <p>
+                Progresso: {{ projetoStore.resumoTarefas.progresso }}% ·
+                Atrasadas: {{ projetoStore.resumoTarefas.atrasadas }} ·
+                Concluídas: {{ projetoStore.resumoTarefas.concluidas }} ·
+                Não concluídas: {{ projetoStore.resumoTarefas.nao_concluidas }}
+              </p>
+              <ul>
+                <li v-for="item in projetoStore.desempenhoParticipantes" :key="item.usuario.id">
+                  {{ item.usuario.name || item.usuario.email }} —
+                  atrasadas: {{ item.atrasadas }} · concluídas: {{ item.concluidas }}
+                </li>
+              </ul>
+            </template>
             <img v-if="projetoStore.projetoAtual.foto?.url" class="project-photo" :src="resolveMediaUrl(projetoStore.projetoAtual.foto.url)" alt="Foto do projeto" />
             <div class="photo-update">
               <label>Foto<input type="file" accept="image/png,image/jpeg" @change="projetoPhoto = $event.target.files?.[0] ?? null" /></label>
@@ -490,10 +842,120 @@ function logout() {
               <button type="button" class="danger" :disabled="!projetoStore.podeExcluir" @click="excluirProjeto">Excluir projeto selecionado</button>
             </div>
             <h4 class="spaced">Participantes</h4>
-            <ul><li v-for="participante in projetoStore.participantes" :key="participante.id">{{ participante.name }} — {{ participante.cargo }}</li></ul>
+            <p><code>PATCH/DELETE /projetos/{id}/participantes/{participacao_id}/</code></p>
+            <ul>
+              <li v-for="participante in projetoStore.participantes" :key="participante.id">
+                {{ participante.name || participante.email }} — {{ participante.cargo }}
+                <template v-if="projetoStore.podeGerenciarParticipantes && participante.cargo !== 'fundador'">
+                  <button
+                    v-if="participante.cargo === 'membro'"
+                    type="button"
+                    class="small"
+                    @click="alterarCargoParticipante(participante, 'organizador')"
+                  >Promover</button>
+                  <button
+                    v-else
+                    type="button"
+                    class="small"
+                    @click="alterarCargoParticipante(participante, 'membro')"
+                  >Tornar membro</button>
+                  <button type="button" class="small danger" @click="removerParticipante(participante)">Remover</button>
+                </template>
+              </li>
+            </ul>
             <pre>{{ JSON.stringify(projetoStore.projetoAtual, null, 2) }}</pre>
           </template>
           <p v-else>Nenhum projeto selecionado.</p>
+        </section>
+      </fieldset>
+    </section>
+
+    <section class="spaced" aria-labelledby="pedidos-title">
+      <div class="card-heading">
+        <div>
+          <h2 id="pedidos-title">Pedidos de entrada e convites</h2>
+          <p>Um usuário pede entrada em um projeto; um organizador também pode convidá-lo. A participação só nasce depois do aceite.</p>
+        </div>
+        <div>
+          <button :disabled="loading || !userStore.isAuthenticated" @click="carregarMeusConvites">Meus convites pendentes</button>
+          <button :disabled="loading || !userStore.isAuthenticated" @click="listarPedidos">Recarregar filtros</button>
+        </div>
+      </div>
+
+      <fieldset class="grid project-controls" :disabled="loading || !userStore.isAuthenticated">
+        <section class="card">
+          <h3>1. Consultar pendências</h3>
+          <p><code>GET /pedidos-participacao/</code></p>
+          <form @submit.prevent="listarPedidos">
+            <label>Status
+              <select v-model="pedidoFiltros.status">
+                <option value="">Todos</option>
+                <option value="pendente">Pendente</option>
+                <option value="aceito">Aceito</option>
+                <option value="recusado">Recusado</option>
+                <option value="removido">Removido da equipe</option>
+              </select>
+            </label>
+            <label>Tipo
+              <select v-model="pedidoFiltros.tipo">
+                <option value="">Todos</option>
+                <option value="solicitacao">Solicitação de entrada</option>
+                <option value="convite">Convite do projeto</option>
+              </select>
+            </label>
+            <label>Projeto (opcional)<input v-model.number="pedidoFiltros.projeto" type="number" min="1" /></label>
+            <button>Consultar</button>
+          </form>
+          <p>Convites nesta consulta: {{ pedidoStore.convites.length }}</p>
+          <p>Solicitações nesta consulta: {{ pedidoStore.solicitacoes.length }}</p>
+        </section>
+
+        <section class="card">
+          <h3>2. Convidar usuário</h3>
+          <p><code>POST /pedidos-participacao/</code></p>
+          <p>Selecione antes um projeto em que você seja fundador ou organizador.</p>
+          <form @submit.prevent="convidarUsuario">
+            <label>Projeto<input :value="projetoStore.projetoAtual?.nome || 'Nenhum projeto selecionado'" disabled /></label>
+            <label>Usuário
+              <select v-model="conviteUsuarioId" required>
+                <option value="" disabled>Selecione um usuário</option>
+                <option
+                  v-for="usuario in userStore.users.filter((item) => !projetoStore.participantes.some((participante) => participante.id === item.id))"
+                  :key="usuario.id"
+                  :value="usuario.id"
+                >{{ usuario.name || usuario.email }} (ID {{ usuario.id }})</option>
+              </select>
+            </label>
+            <button type="button" @click="run(() => userStore.getAllUsers(), 'Usuários carregados.')">Carregar usuários</button>
+            <button :disabled="!projetoStore.podeEditar || !conviteUsuarioId">Enviar convite</button>
+          </form>
+        </section>
+
+        <section class="card card-wide">
+          <h3>3. Responder</h3>
+          <p><code>POST /pedidos-participacao/{id}/aceitar/</code> ou <code>recusar/</code></p>
+          <div class="table-wrapper">
+            <table>
+              <thead><tr><th>ID</th><th>Tipo</th><th>Projeto</th><th>Usuário</th><th>Status</th><th>Ações</th></tr></thead>
+              <tbody>
+                <tr v-for="pedido in pedidoStore.pedidos" :key="pedido.id">
+                  <td>{{ pedido.id }}</td>
+                  <td>{{ pedido.tipo === 'convite' ? 'Convite' : 'Solicitação' }}</td>
+                  <td>{{ pedido.projeto_detalhe?.nome }} (ID {{ pedido.projeto_detalhe?.id }})</td>
+                  <td>{{ pedido.usuario_detalhe?.name || pedido.usuario_detalhe?.email }}</td>
+                  <td>{{ pedido.status }}</td>
+                  <td>
+                    <template v-if="podeResponderPedido(pedido)">
+                      <button type="button" class="small" @click="responderPedido(pedido, true)">Aceitar</button>
+                      <button type="button" class="small danger" @click="responderPedido(pedido, false)">Recusar</button>
+                    </template>
+                    <span v-else>Somente consulta</span>
+                  </td>
+                </tr>
+                <tr v-if="!pedidoStore.pedidos.length"><td colspan="6">Nenhum pedido encontrado com esses filtros.</td></tr>
+              </tbody>
+            </table>
+          </div>
         </section>
       </fieldset>
     </section>
@@ -559,15 +1021,22 @@ function logout() {
 
         <section class="card card-wide">
           <h3>Tarefas</h3>
-          <p><code>GET/POST/PATCH/DELETE /tarefas/</code></p>
+          <p><code>GET/POST/PATCH/DELETE /tarefas/</code> · <code>GET /tarefas/atrasadas/</code></p>
+          <form class="inline-form" @submit.prevent="listarTarefas">
+            <label class="checkbox-label">
+              <input v-model="somenteTarefasAtrasadas" type="checkbox" /> Somente atrasadas
+            </label>
+            <button>Aplicar filtro</button>
+          </form>
           <form @submit.prevent="salvarTarefa(true)">
             <label>Título<input v-model="tarefaForm.titulo" maxlength="150" required /></label>
             <label>Descrição<textarea v-model="tarefaForm.descricao" rows="3"></textarea></label>
             <label>
               Prioridade
               <select v-model="tarefaForm.prioridade">
-                <option value="baixa">Baixa</option><option value="media">Média</option>
-                <option value="alta">Alta</option><option value="urgente">Urgente</option>
+                <option v-for="(prioridade, valor) in prioridades" :key="valor" :value="valor">
+                  {{ prioridade.nome }}
+                </option>
               </select>
             </label>
             <label>
@@ -597,17 +1066,175 @@ function logout() {
 
           <div class="table-wrapper spaced">
             <table>
-              <thead><tr><th>ID</th><th>Título</th><th>Prioridade</th><th>Status</th><th>Ação</th></tr></thead>
+              <thead><tr><th>ID</th><th>Título</th><th>Prioridade</th><th>Situação</th><th>Criada em</th><th>Prazo</th><th>Categorias</th><th>Ação</th></tr></thead>
               <tbody>
                 <tr v-for="tarefa in tarefaStore.tarefas" :key="tarefa.id">
-                  <td>{{ tarefa.id }}</td><td>{{ tarefa.titulo }}</td><td>{{ tarefa.prioridade }}</td><td>{{ tarefa.status }}</td>
+                  <td>{{ tarefa.id }}</td>
+                  <td>{{ tarefa.titulo }}</td>
+                  <td>{{ tarefa.prioridade }}</td>
+                  <td>{{ nomeSituacao(tarefa.situacao) }}</td>
+                  <td>{{ new Date(tarefa.criado_em).toLocaleString('pt-BR') }}</td>
+                  <td>{{ tarefa.prazo ? new Date(tarefa.prazo).toLocaleString('pt-BR') : 'Sem prazo' }}</td>
+                  <td>{{ tarefa.categoria?.join(', ') || 'Sem categoria' }}</td>
                   <td><button type="button" class="small" @click="selecionarTarefa(tarefa)">Selecionar</button></td>
                 </tr>
-                <tr v-if="!tarefaStore.tarefas.length"><td colspan="5">Nenhuma tarefa carregada.</td></tr>
+                <tr v-if="!tarefaStore.tarefas.length"><td colspan="8">Nenhuma tarefa carregada.</td></tr>
               </tbody>
             </table>
           </div>
+          <div class="card-heading spaced">
+            <div>
+              <h4>Tarefas atrasadas</h4>
+              <p>Total: {{ tarefaStore.totalAtrasadas }}</p>
+            </div>
+            <button type="button" @click="carregarTarefasAtrasadas">Carregar atrasadas</button>
+          </div>
+          <ul class="select-list">
+            <li v-for="tarefa in tarefaStore.tarefasAtrasadas" :key="tarefa.id">
+              <button type="button" class="item-button" @click="selecionarTarefa(tarefa)">
+                {{ tarefa.titulo }} — prazo {{ new Date(tarefa.prazo).toLocaleString('pt-BR') }}
+              </button>
+            </li>
+            <li v-if="!tarefaStore.tarefasAtrasadas.length">Nenhuma tarefa atrasada.</li>
+          </ul>
+          <section v-if="tarefaSelecionadaId" class="comments-panel spaced" aria-labelledby="comentarios-title">
+            <div class="card-heading">
+              <div>
+                <h4 id="comentarios-title">Comentários da tarefa</h4>
+                <p><code>GET/POST/PATCH/DELETE /comentarios/?tarefa={{ tarefaSelecionadaId }}</code></p>
+              </div>
+              <span>{{ comentarioStore.total }} comentário(s)</span>
+            </div>
+
+            <form class="comment-form" @submit.prevent="salvarComentario(!comentarioSelecionadoId)">
+              <label>
+                {{ comentarioSelecionadoId ? 'Editar seu comentário' : 'Adicionar comentário' }}
+                <textarea
+                  v-model="comentarioForm.conteudo"
+                  rows="4"
+                  maxlength="5000"
+                  placeholder="Escreva uma atualização, dúvida ou observação sobre a tarefa..."
+                  required
+                ></textarea>
+              </label>
+              <div class="inline-form">
+                <button :disabled="!comentarioForm.conteudo.trim()">
+                  {{ comentarioSelecionadoId ? 'Salvar edição' : 'Publicar comentário' }}
+                </button>
+                <button
+                  v-if="comentarioSelecionadoId"
+                  type="button"
+                  class="secondary"
+                  @click="cancelarEdicaoComentario"
+                >Cancelar edição</button>
+              </div>
+            </form>
+
+            <p v-if="comentarioStore.loading">Carregando comentários...</p>
+            <div v-else class="comment-list">
+              <article v-for="comentario in comentarioStore.comentarios" :key="comentario.id" class="comment-item">
+                <header>
+                  <strong>{{ comentario.autor?.name || comentario.autor?.email }}</strong>
+                  <span>
+                    {{ new Date(comentario.criado_em).toLocaleString('pt-BR') }}
+                    <template v-if="comentario.atualizado_em !== comentario.criado_em"> · editado</template>
+                  </span>
+                </header>
+                <p>{{ comentario.conteudo }}</p>
+                <div v-if="podeAlterarComentario(comentario)" class="inline-form">
+                  <button type="button" class="small" @click="selecionarComentario(comentario)">Editar</button>
+                  <button type="button" class="small danger" @click="excluirComentario(comentario)">Excluir</button>
+                </div>
+              </article>
+              <p v-if="!comentarioStore.comentarios.length">Nenhum comentário nesta tarefa.</p>
+            </div>
+          </section>
           <pre v-if="tarefaStore.tarefaAtual">{{ JSON.stringify(tarefaStore.tarefaAtual, null, 2) }}</pre>
+        </section>
+      </fieldset>
+    </section>
+
+    <section class="spaced" aria-labelledby="documentos-title">
+      <div class="card-heading">
+        <div>
+          <h2 id="documentos-title">Documentos das tarefas</h2>
+          <p>Envie PDFs e consulte a tarefa de origem de cada documento.</p>
+        </div>
+        <form class="inline-form" @submit.prevent="listarDocumentos">
+          <input v-model="documentoBusca" placeholder="Buscar por documento ou tarefa" />
+          <button :disabled="loading || !projetoSelecionadoId">Buscar</button>
+        </form>
+      </div>
+
+      <fieldset class="grid project-controls" :disabled="loading || !projetoSelecionadoId">
+        <section class="card">
+          <h3>Novo documento</h3>
+          <p><code>POST multipart /documentos/</code> cria o arquivo e o vincula à tarefa em uma única operação.</p>
+          <form @submit.prevent="criarDocumento">
+            <label>Nome<input v-model="documentoForm.nome" maxlength="200" required /></label>
+            <label>
+              Tarefa de origem
+              <select v-model="documentoForm.tarefa" required>
+                <option value="" disabled>Selecione uma tarefa</option>
+                <option v-for="tarefa in tarefaStore.tarefas" :key="tarefa.id" :value="tarefa.id">
+                  {{ tarefa.titulo }}
+                </option>
+              </select>
+            </label>
+            <label>Descrição do arquivo<input v-model="documentoForm.description" maxlength="255" /></label>
+            <label>PDF<input type="file" accept="application/pdf" required @change="selecionarArquivoDocumento" /></label>
+            <button>Enviar e vincular</button>
+            <button
+              type="button"
+              :disabled="!documentoSelecionadoId || !documentoForm.nome || !documentoForm.tarefa"
+              @click="atualizarDocumento"
+            >
+              Atualizar nome e tarefa
+            </button>
+            <button type="button" class="danger" :disabled="!documentoSelecionadoId" @click="excluirDocumento">
+              Excluir selecionado
+            </button>
+          </form>
+        </section>
+
+        <section class="card">
+          <h3>Documento selecionado</h3>
+          <template v-if="documentoSelecionadoId">
+            <pre>{{ JSON.stringify(documentoStore.documentos.find((item) => item.id === documentoSelecionadoId), null, 2) }}</pre>
+          </template>
+          <p v-else>Selecione um documento na lista.</p>
+        </section>
+
+        <section class="card card-wide">
+          <div class="card-heading">
+            <div>
+              <h3>Lista do projeto</h3>
+              <p>Total: {{ documentoStore.total }}</p>
+            </div>
+            <button type="button" @click="listarDocumentos">Recarregar</button>
+          </div>
+          <div class="table-wrapper">
+            <table>
+              <thead>
+                <tr><th>ID</th><th>Documento</th><th>Tarefa de origem</th><th>Enviado por</th><th>Arquivo</th><th>Ação</th></tr>
+              </thead>
+              <tbody>
+                <tr v-for="documento in documentoStore.documentos" :key="documento.id">
+                  <td>{{ documento.id }}</td>
+                  <td>{{ documento.nome }}</td>
+                  <td>{{ documento.tarefa_origem?.titulo }} (ID {{ documento.tarefa_origem?.id }})</td>
+                  <td>{{ documento.enviado_por?.name || `ID ${documento.enviado_por?.id}` }}</td>
+                  <td>
+                    <a v-if="documento.arquivo?.url" :href="resolveMediaUrl(documento.arquivo.url)" target="_blank" rel="noopener noreferrer">
+                      Abrir PDF
+                    </a>
+                  </td>
+                  <td><button type="button" class="small" @click="selecionarDocumento(documento)">Selecionar</button></td>
+                </tr>
+                <tr v-if="!documentoStore.documentos.length"><td colspan="6">Nenhum documento encontrado.</td></tr>
+              </tbody>
+            </table>
+          </div>
         </section>
       </fieldset>
     </section>
@@ -670,6 +1297,7 @@ function logout() {
 .card > p { margin-bottom: 1rem; color: #667085; }
 
 form, .photo-update { display: grid; gap: 0.8rem; }
+.inline-form { display: flex; align-items: end; gap: 0.5rem; }
 .spaced, .photo-update { margin-top: 1rem; }
 label { display: grid; gap: 0.3rem; font-weight: 600; }
 input, textarea, select {
@@ -683,6 +1311,8 @@ input, textarea, select {
 .project-controls .card { min-width: 0; }
 .checkbox-label { display: flex; align-items: center; }
 .checkbox-label input { width: auto; }
+.category-child { margin-left: 1.5rem; }
+.category-grandchild { margin-left: 3rem; }
 .project-photo { max-width: 100%; max-height: 180px; object-fit: contain; margin-top: 1rem; }
 .choices { display: flex; flex-wrap: wrap; gap: 0.75rem; padding: 0.8rem; border: 1px solid #dfe3ea; border-radius: 7px; }
 .select-list { display: grid; gap: 0.4rem; margin-top: 1rem; }
@@ -701,6 +1331,33 @@ button:hover { background: var(--azul-claro); }
 button:disabled { opacity: 0.55; cursor: not-allowed; }
 button.danger { background: #a92a2a; }
 button.small { padding: 0.4rem 0.7rem; }
+button.secondary { color: var(--primaria); background: #e9eef5; }
+
+.comments-panel {
+  padding: 1rem;
+  border: 1px solid #d0d7de;
+  border-radius: 8px;
+  background: #f6f8fa;
+}
+.comment-form { margin-block: 1rem; }
+.comment-list { display: grid; gap: 0.75rem; }
+.comment-item {
+  overflow: hidden;
+  border: 1px solid #d0d7de;
+  border-radius: 8px;
+  background: white;
+}
+.comment-item header {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.65rem 0.8rem;
+  border-bottom: 1px solid #d8dee4;
+  background: #f6f8fa;
+}
+.comment-item header span { color: #667085; font-size: 0.85rem; }
+.comment-item > p { padding: 0.8rem; white-space: pre-wrap; overflow-wrap: anywhere; }
+.comment-item > .inline-form { padding: 0 0.8rem 0.8rem; }
 
 .profile { justify-content: flex-start; margin: 1rem 0; }
 .profile img, .avatar {

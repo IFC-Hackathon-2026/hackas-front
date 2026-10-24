@@ -1,28 +1,48 @@
 <script setup>
-import { onMounted, ref, watch } from 'vue';
+import { onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { definirContainerNotificacoes } from '@/services/notificacaoService'
 
 const props = defineProps({
   title: {
     type: String,
     required: true,
   },
-});
+  bloqueado: Boolean,
+  amplo: Boolean,
+})
 
-const visible = defineModel('visible', { type: Boolean, default: false });
-const dialog = ref(null);
+const visible = defineModel('visible', { type: Boolean, default: false })
+const dialog = ref(null)
+
+function fechar() {
+  if (!props.bloqueado) visible.value = false
+}
+
+function restaurarNotificacoes() {
+  const modaisAbertos = [...document.querySelectorAll('dialog[open]')]
+    .filter((modal) => modal !== dialog.value)
+  definirContainerNotificacoes(modaisAbertos.at(-1) ?? document.body)
+}
+
+function aoFechar() {
+  visible.value = false
+  restaurarNotificacoes()
+}
 
 function syncVisibility() {
-  if (!dialog.value) return;
+  if (!dialog.value) return
 
   if (visible.value && !dialog.value.open) {
-    dialog.value.showModal();
+    dialog.value.showModal()
+    definirContainerNotificacoes(dialog.value)
   } else if (!visible.value && dialog.value.open) {
-    dialog.value.close();
+    dialog.value.close()
   }
 }
 
-onMounted(syncVisibility);
-watch(visible, syncVisibility);
+onMounted(syncVisibility)
+watch(visible, syncVisibility)
+onBeforeUnmount(restaurarNotificacoes)
 </script>
 
 <template>
@@ -30,12 +50,20 @@ watch(visible, syncVisibility);
     <dialog
       ref="dialog"
       class="app-modal"
-      @cancel.prevent="visible = false"
-      @close="visible = false"
+      :class="{ 'app-modal--wide': amplo }"
+      :aria-label="props.title"
+      @cancel.prevent="fechar"
+      @close="aoFechar"
     >
       <header class="modal-header">
         <h2>{{ props.title }}</h2>
-        <button type="button" class="close-button" aria-label="Fechar modal" @click="visible = false">
+        <button
+          type="button"
+          class="close-button"
+          aria-label="Fechar modal"
+          :disabled="props.bloqueado"
+          @click="fechar"
+        >
           <span class="mdi mdi-close" aria-hidden="true"></span>
         </button>
       </header>
@@ -70,6 +98,15 @@ watch(visible, syncVisibility);
   min-height: 0;
   overflow-y: auto;
   overscroll-behavior: contain;
+}
+
+.app-modal--wide {
+  width: min(58rem, calc(100vw - 2rem));
+  max-height: calc(100dvh - 2rem);
+}
+.app-modal--wide .modal-content { flex-shrink: 0; overflow: visible; }
+@media (max-height: 600px), (max-width: 600px) {
+  .app-modal--wide { overflow-y: auto; }
 }
 
 .app-modal::backdrop {

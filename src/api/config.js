@@ -1,6 +1,7 @@
 import axios from 'axios';
 
-const BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'https://hackas-back.class.fabricadesoftware.ifc.edu.br/api';
+const BASE_URL = import.meta.env.VITE_API_BASE_URL
+  ?? 'https://hackas-back.class.fabricadesoftware.ifc.edu.br/api';
 
 const api = axios.create({
   baseURL: BASE_URL,
@@ -11,6 +12,10 @@ const api = axios.create({
 
 // Injeta o access token em todas as requisições
 api.interceptors.request.use((config) => {
+  if (config.data instanceof FormData) {
+    // O navegador precisa gerar o Content-Type com o boundary do multipart.
+    delete config.headers['Content-Type'];
+  }
   const token = localStorage.getItem('access_token');
   if (token && token !== 'undefined' && token !== 'null' && !config.url?.includes('/token/')) {
     config.headers.Authorization = `Bearer ${token}`;
