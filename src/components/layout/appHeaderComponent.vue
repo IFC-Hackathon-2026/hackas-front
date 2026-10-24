@@ -1,5 +1,7 @@
+
 <script setup>
 import { onMounted, onUnmounted, ref } from 'vue'
+import { RouterLink } from 'vue-router'
 import LogoLight from '/FarolFlow-logo-light.svg'
 
 const isScrolled = ref(false)
@@ -20,10 +22,43 @@ onUnmounted(() => {
 
 <template>
   <header class="app-header" :class="{ 'is-scrolled': isScrolled }">
-    <img :src="LogoLight" alt="logo" style="width: 130px; height: auto;">
-    <span class="mdi mdi-account-circle-outline" style="font-size: 2rem;"></span>
-  </header>
 
+    <!-- LOGO -->
+    <RouterLink to="/">
+      <img
+        :src="LogoLight"
+        alt="FarolFlow"
+        class="logo"
+      />
+    </RouterLink>
+
+    <!-- MENU -->
+    <nav>
+      <ul class="menu">
+
+        <!-- INÍCIO -->
+        <li>
+          <RouterLink to="/" class="menu-link">
+            Início
+          </RouterLink>
+        </li>
+
+        <!-- SOBRE NÓS -->
+        <li>
+          <RouterLink to="/aboutus" class="menu-link">
+            Sobre Nós
+          </RouterLink>
+        </li>
+
+      </ul>
+    </nav>
+
+    <!-- USUÁRIO -->
+    <span
+      class="mdi mdi-account-circle-outline usuario"
+    ></span>
+
+  </header>
 </template>
 
 <style scoped>
@@ -42,5 +77,45 @@ onUnmounted(() => {
 
 .app-header.is-scrolled {
   box-shadow: 0 4px 16px rgb(0 18 40 / 12%);
+}
+
+.logo {
+  width: 130px;
+  height: auto;
+}
+
+/* MENU */
+.menu {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.menu-link {
+  display: inline-block;
+  color: #2767aa;
+  text-decoration: none;
+  font-size: 16px;
+  font-weight: 600;
+  padding: 10px 16px;
+  border-radius: 8px;
+  transition: background-color 0.2s;
+}
+
+.menu-link:hover {
+  background-color: #e8f0fa;
+}
+
+.menu-link.router-link-exact-active {
+  color: #174b83;
+  border-bottom: 2px solid #2767aa;
+}
+
+.usuario {
+  font-size: 2rem;
+  cursor: pointer;
 }
 </style>

@@ -26,7 +26,7 @@
   <section>
     <ul class="devs">
       <li>
-        <p><img src="" alt="" /></p>
+        <p><img src="/carlos.jpeg" alt="carlos" width="400" height="250" /></p>
         <p class="nomes">Carlos Henrique Pereira Santos</p>
         <a href="https://mail.google.com/mail/?view=cm&fs=1&to=ifcarloshenrique@email.com" 
         target="_blank"
@@ -48,7 +48,7 @@
       </li>
 
        <li>
-        <p><img src="" alt="" /></p>
+        <p><img src="/kauan.jpeg" alt="kauan" width="400" height="250" /></p>
         <p class="nomes">Kauan dos Santos Luciano</p>
         <a href="https://mail.google.com/mail/?view=cm&fs=1&to=kauanlucianoinfo3ifc@email.com" 
         target="_blank"
@@ -70,7 +70,7 @@
       </li>
 
      <li>
-        <p><img src="" alt="" /></p>
+        <p><img src="/laura.jpeg" alt="laura" width="400" height="250" /></p>
         <p class="nomes">Laura Eloysa da Silva</p>
         <a href="https://mail.google.com/mail/?view=cm&fs=1&to=lauraeloysad@gmail.com" 
         target="_blank"
@@ -92,7 +92,7 @@
       </li>
 
       <li>
-        <p><img src="" alt="" /></p>
+        <p><img src="/maria.jpeg" alt="maria" width="400" height="250" /></p>
         <p class="nomes">Maria Aparecida dos Santos Costa</p>
         <a href="https://mail.google.com/mail/?view=cm&fs=1&to=mariaaparecida.ifc.araquari@gmail.com" 
         target="_blank"
@@ -113,7 +113,7 @@
        
       </li>
       <li>
-        <p><img src="" alt="" /></p>
+        <p><img src="/pedro.jpeg" alt="pedro" width="450" height="250" /></p>
         <p class="nomes">Pedro Gabriel Gonçalves</p>
         <a href="https://mail.google.com/mail/?view=cm&fs=1&to=pedrogabrielgoncalves91@gmail.com" 
         target="_blank"
