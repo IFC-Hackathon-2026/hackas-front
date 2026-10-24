@@ -112,37 +112,38 @@ function voltarAoTopo() {
           </button>
         </div>
 
-        <ul class="lista-eventos">
-          <li
-            v-for="evento in eventosDestaque"
-            :key="evento.id"
-            class="card-evento"
-          >
-            <div class="evento-imagem">
-              <img
-                v-if="evento.imagem"
-                :src="evento.imagem"
-                :alt="evento.titulo"
-              />
-            </div>
+    <ul class="lista-eventos">
+  <li
+    v-for="evento in eventosDestaque"
+    :key="evento.id"
+    class="card-evento"
+    role="link"
+    tabindex="0"
+    :aria-label="`Ver evento ${evento.titulo}`"
+    @click="navegarPara(`/eventos/${evento.id}`)"
+    @keydown.enter="navegarPara(`/eventos/${evento.id}`)"
+    @keydown.space.prevent="navegarPara(`/eventos/${evento.id}`)"
+  >
+    <div class="evento-imagem">
+      <img
+        v-if="evento.imagem"
+        :src="evento.imagem"
+        :alt="evento.titulo"
+      />
+    </div>
 
-            <div class="evento-informacoes">
-              <div class="evento-textos">
-                <h3>{{ evento.titulo }}</h3>
-                <p>{{ evento.categoria }}</p>
-              </div>
+    <div class="evento-informacoes">
+      <div class="evento-textos">
+        <h3>{{ evento.titulo }}</h3>
+        <p>{{ evento.categoria }}</p>
+      </div>
 
-              <button
-                type="button"
-                class="evento-seta"
-                :aria-label="`Ver evento ${evento.titulo}`"
-                @click="navegarPara(`/eventos/${evento.id}`)"
-              >
-                <span class="mdi mdi-arrow-right"></span>
-              </button>
-            </div>
-          </li>
-        </ul>
+      <span class="evento-seta" aria-hidden="true">
+        <span class="mdi mdi-arrow-right"></span>
+      </span>
+    </div>
+  </li>
+</ul>
       </section>
     </div>
 
@@ -186,7 +187,6 @@ function voltarAoTopo() {
 .homepage {
   width: 100%;
   color: #071a35;
-  overflow: clip;
 }
 
 
@@ -344,6 +344,7 @@ function voltarAoTopo() {
 .card-evento:hover {
   transform: translateY(-8px);
   box-shadow: 0 12px 28px rgb(1 41 95 / 18%);
+  cursor: pointer;
 }
 
 .evento-imagem {
