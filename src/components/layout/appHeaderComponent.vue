@@ -1,9 +1,11 @@
+
 <script setup>
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useUserStore } from '@/stores/userStore'
 import { RouterLink } from 'vue-router'
 import api from '@/api/config'
 import { notificacao } from '@/services/notificacaoService'
+import LogoLight from '/FarolFlow-logo-light.svg'
 
 const userStore = useUserStore()
 const isScrolled = ref(false)
@@ -49,7 +51,31 @@ onUnmounted(() => {
 
 <template>
   <header class="app-header" :class="{ 'is-scrolled': isScrolled }">
-    <img class="header-logo" src="/FarolFlow-logo-light.svg" alt="Logo Farol Flow" style="width: 130px; height: auto" />
+    <RouterLink to="/" class="header-logo" aria-label="FarolFlow — Início">
+      <img
+        :src="LogoLight"
+        alt="FarolFlow"
+        class="logo"
+      />
+    </RouterLink>
+
+    <nav aria-label="Navegação principal">
+      <ul class="menu">
+
+        <li>
+          <RouterLink to="/" class="menu-link">
+            Início
+          </RouterLink>
+        </li>
+
+        <li>
+          <RouterLink to="/aboutus" class="menu-link">
+            Sobre Nós
+          </RouterLink>
+        </li>
+
+      </ul>
+    </nav>
 
     <RouterLink v-if="!userStore.isAuthenticated" to="/login" class="botao-entrar">
       <span class="mdi mdi-login" aria-hidden="true"></span>
@@ -90,6 +116,45 @@ onUnmounted(() => {
 .app-header.is-scrolled {
   box-shadow: 0 4px 16px rgb(0 18 40 / 12%);
 }
+.header-logo {
+  display: inline-flex;
+  flex-shrink: 0;
+}
+
+.logo {
+  width: 130px;
+  height: auto;
+}
+
+.menu {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.menu-link {
+  display: inline-block;
+  color: #2767aa;
+  text-decoration: none;
+  font-size: 16px;
+  font-weight: 600;
+  padding: 10px 16px;
+  border-radius: 8px;
+  transition: background-color 0.2s;
+}
+
+.menu-link:hover {
+  background-color: #e8f0fa;
+}
+
+.menu-link.router-link-exact-active {
+  color: #174b83;
+  border-bottom: 2px solid #2767aa;
+}
+
 .user-avatar {
   width: 40px;
   height: 40px;
@@ -188,7 +253,7 @@ onUnmounted(() => {
     padding: 1rem 20px;
     gap: 1rem;
   }
-  .app-header > img {
+  .header-logo .logo {
     max-width: 84px;
     flex-shrink: 0;
   }
@@ -205,6 +270,10 @@ onUnmounted(() => {
 
 @media (max-width: 600px) {
   .app-header { padding-block: 0.75rem; }
+  .app-header { flex-wrap: wrap; }
+  .app-header nav { order: 1; flex-basis: 100%; }
+  .menu { justify-content: center; gap: 8px; }
+  .menu-link { padding: 6px 12px; font-size: 0.875rem; }
   .botao-entrar {
     width: auto;
     min-height: 34px;
