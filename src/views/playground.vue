@@ -7,6 +7,7 @@ import { useStatusStore } from '@/stores/statusStore'
 import { useCategoriaStore } from '@/stores/categoriaStore'
 import { PROJECT_CATEGORIES } from '@/constants/projectCategories'
 import { useTarefaStore } from '@/stores/tarefaStore'
+import { useComentarioStore } from '@/stores/comentarioStore'
 import { useDocumentoStore } from '@/stores/documentoStore'
 import { usePedidoParticipacaoStore } from '@/stores/pedidoParticipacaoStore'
 
@@ -17,6 +18,7 @@ const projetoStore = useProjetoStore()
 const statusStore = useStatusStore()
 const categoriaStore = useCategoriaStore()
 const tarefaStore = useTarefaStore()
+const comentarioStore = useComentarioStore()
 const documentoStore = useDocumentoStore()
 const pedidoStore = usePedidoParticipacaoStore()
 const projetoForm = reactive({ nome: '', descricao: '', categorias: [] })
@@ -31,6 +33,8 @@ const tarefaForm = reactive({
 const statusSelecionadoId = ref('')
 const categoriaSelecionadaId = ref('')
 const tarefaSelecionadaId = ref('')
+const comentarioSelecionadoId = ref('')
+const comentarioForm = reactive({ conteudo: '' })
 const somenteTarefasAtrasadas = ref(false)
 const documentoSelecionadoId = ref('')
 const documentoArquivo = ref(null)
@@ -44,6 +48,10 @@ const projetoSelecionadoId = computed(() => projetoStore.projetoAtual?.id ?? nul
 async function carregarDadosProjeto() {
   const id = projetoSelecionadoId.value
   if (!id) throw new Error('Selecione um projeto primeiro.')
+  tarefaSelecionadaId.value = ''
+  comentarioSelecionadoId.value = ''
+  comentarioForm.conteudo = ''
+  comentarioStore.reset()
   const resultado = await run(
     () => Promise.all([
       statusStore.getStatuses(id),
@@ -135,7 +143,7 @@ async function salvarTarefa(criar) {
     criar ? 'Tarefa criada.' : 'Tarefa atualizada.',
   )
   if (tarefa) {
-    selecionarTarefa(tarefa)
+    await selecionarTarefa(tarefa)
     await Promise.all([
       projetoStore.getProjeto(projetoId),
       userStore.getMe(),
@@ -161,6 +169,53 @@ async function selecionarTarefa(tarefa) {
     categoria: (tarefaCompleta.categoria ?? []).map((item) => typeof item === 'object' ? item.id : item),
     responsavel: (tarefaCompleta.responsavel ?? []).map((item) => typeof item === 'object' ? item.id : item),
   })
+  comentarioSelecionadoId.value = ''
+  comentarioForm.conteudo = ''
+  await run(
+    () => comentarioStore.getComentarios(tarefaCompleta.id, { page_size: 100 }),
+    'Tarefa e comentários carregados.',
+  )
+}
+
+function selecionarComentario(comentario) {
+  comentarioStore.selecionarComentario(comentario)
+  comentarioSelecionadoId.value = comentario.id
+  comentarioForm.conteudo = comentario.conteudo
+}
+
+function cancelarEdicaoComentario() {
+  comentarioSelecionadoId.value = ''
+  comentarioForm.conteudo = ''
+  comentarioStore.selecionarComentario(null)
+}
+
+function podeAlterarComentario(comentario) {
+  return String(comentario.autor?.id) === String(userStore.user?.id)
+}
+
+async function salvarComentario(criar) {
+  const comentario = await run(
+    () => criar
+      ? comentarioStore.createComentario(tarefaSelecionadaId.value, comentarioForm)
+      : comentarioStore.updateComentario(
+        comentarioSelecionadoId.value,
+        tarefaSelecionadaId.value,
+        comentarioForm,
+      ),
+    criar ? 'Comentário publicado.' : 'Comentário atualizado.',
+  )
+  if (comentario) cancelarEdicaoComentario()
+}
+
+async function excluirComentario(comentario) {
+  if (!window.confirm('Excluir este comentário?')) return
+  const excluido = await run(
+    () => comentarioStore.deleteComentario(comentario.id, tarefaSelecionadaId.value),
+    'Comentário excluído.',
+  )
+  if (excluido !== null && comentarioSelecionadoId.value === comentario.id) {
+    cancelarEdicaoComentario()
+  }
 }
 
 async function carregarTarefasAtrasadas() {
@@ -186,6 +241,8 @@ async function excluirTarefa() {
     ])
   }
   tarefaSelecionadaId.value = ''
+  comentarioStore.reset()
+  cancelarEdicaoComentario()
 }
 
 async function listarDocumentos() {
@@ -435,6 +492,7 @@ async function login() {
     statusStore.reset()
     categoriaStore.reset()
     tarefaStore.reset()
+    comentarioStore.reset()
     documentoStore.reset()
     return userStore.login(loginForm.email, loginForm.password)
   },
@@ -509,6 +567,7 @@ function logout() {
   statusStore.reset()
   categoriaStore.reset()
   tarefaStore.reset()
+  comentarioStore.reset()
   documentoStore.reset()
   pedidoStore.reset()
   selectedUser.value = null
@@ -1030,6 +1089,58 @@ function logout() {
             </li>
             <li v-if="!tarefaStore.tarefasAtrasadas.length">Nenhuma tarefa atrasada.</li>
           </ul>
+          <section v-if="tarefaSelecionadaId" class="comments-panel spaced" aria-labelledby="comentarios-title">
+            <div class="card-heading">
+              <div>
+                <h4 id="comentarios-title">Comentários da tarefa</h4>
+                <p><code>GET/POST/PATCH/DELETE /comentarios/?tarefa={{ tarefaSelecionadaId }}</code></p>
+              </div>
+              <span>{{ comentarioStore.total }} comentário(s)</span>
+            </div>
+
+            <form class="comment-form" @submit.prevent="salvarComentario(!comentarioSelecionadoId)">
+              <label>
+                {{ comentarioSelecionadoId ? 'Editar seu comentário' : 'Adicionar comentário' }}
+                <textarea
+                  v-model="comentarioForm.conteudo"
+                  rows="4"
+                  maxlength="5000"
+                  placeholder="Escreva uma atualização, dúvida ou observação sobre a tarefa..."
+                  required
+                ></textarea>
+              </label>
+              <div class="inline-form">
+                <button :disabled="!comentarioForm.conteudo.trim()">
+                  {{ comentarioSelecionadoId ? 'Salvar edição' : 'Publicar comentário' }}
+                </button>
+                <button
+                  v-if="comentarioSelecionadoId"
+                  type="button"
+                  class="secondary"
+                  @click="cancelarEdicaoComentario"
+                >Cancelar edição</button>
+              </div>
+            </form>
+
+            <p v-if="comentarioStore.loading">Carregando comentários...</p>
+            <div v-else class="comment-list">
+              <article v-for="comentario in comentarioStore.comentarios" :key="comentario.id" class="comment-item">
+                <header>
+                  <strong>{{ comentario.autor?.name || comentario.autor?.email }}</strong>
+                  <span>
+                    {{ new Date(comentario.criado_em).toLocaleString('pt-BR') }}
+                    <template v-if="comentario.atualizado_em !== comentario.criado_em"> · editado</template>
+                  </span>
+                </header>
+                <p>{{ comentario.conteudo }}</p>
+                <div v-if="podeAlterarComentario(comentario)" class="inline-form">
+                  <button type="button" class="small" @click="selecionarComentario(comentario)">Editar</button>
+                  <button type="button" class="small danger" @click="excluirComentario(comentario)">Excluir</button>
+                </div>
+              </article>
+              <p v-if="!comentarioStore.comentarios.length">Nenhum comentário nesta tarefa.</p>
+            </div>
+          </section>
           <pre v-if="tarefaStore.tarefaAtual">{{ JSON.stringify(tarefaStore.tarefaAtual, null, 2) }}</pre>
         </section>
       </fieldset>
@@ -1178,7 +1289,7 @@ function logout() {
 .card > p { margin-bottom: 1rem; color: #667085; }
 
 form, .photo-update { display: grid; gap: 0.8rem; }
-.inline-form { display: flex; align-items: end; }
+.inline-form { display: flex; align-items: end; gap: 0.5rem; }
 .spaced, .photo-update { margin-top: 1rem; }
 label { display: grid; gap: 0.3rem; font-weight: 600; }
 input, textarea, select {
@@ -1212,6 +1323,33 @@ button:hover { background: var(--azul-claro); }
 button:disabled { opacity: 0.55; cursor: not-allowed; }
 button.danger { background: #a92a2a; }
 button.small { padding: 0.4rem 0.7rem; }
+button.secondary { color: var(--primaria); background: #e9eef5; }
+
+.comments-panel {
+  padding: 1rem;
+  border: 1px solid #d0d7de;
+  border-radius: 8px;
+  background: #f6f8fa;
+}
+.comment-form { margin-block: 1rem; }
+.comment-list { display: grid; gap: 0.75rem; }
+.comment-item {
+  overflow: hidden;
+  border: 1px solid #d0d7de;
+  border-radius: 8px;
+  background: white;
+}
+.comment-item header {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.65rem 0.8rem;
+  border-bottom: 1px solid #d8dee4;
+  background: #f6f8fa;
+}
+.comment-item header span { color: #667085; font-size: 0.85rem; }
+.comment-item > p { padding: 0.8rem; white-space: pre-wrap; overflow-wrap: anywhere; }
+.comment-item > .inline-form { padding: 0 0.8rem 0.8rem; }
 
 .profile { justify-content: flex-start; margin: 1rem 0; }
 .profile img, .avatar {

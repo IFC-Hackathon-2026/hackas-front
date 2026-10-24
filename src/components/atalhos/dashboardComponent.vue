@@ -56,10 +56,6 @@ const atrasadas = computed(() =>
   tarefas.value.filter(atrasada).length
 )
 
-const pendentes = computed(() =>
-  tarefas.value.filter(pendente).length
-)
-
 const progresso = computed(() =>
   tarefas.value.length
     ? Math.round((concluidas.value / tarefas.value.length) * 100)

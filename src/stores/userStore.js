@@ -4,6 +4,14 @@ import UserService from "@/services/userService";
 
 const userService = new UserService();
 
+const resumoVazio = Object.freeze({
+  total: 0,
+  concluidas: 0,
+  nao_concluidas: 0,
+  atrasadas: 0,
+  progresso: 0,
+});
+
 function readToken(key) {
   const token = localStorage.getItem(key);
   if (!token || token === 'undefined' || token === 'null') {
@@ -24,6 +32,8 @@ export const useUserStore = defineStore('user', () => {
   const users = ref([]);
 
   const isAuthenticated = computed(() => !!accessToken.value);
+
+  const resumoTarefas = computed(() => user.value?.resumo_tarefas ?? resumoVazio);
 
   async function getMe() {
     const { data } = await userService.getMe();
@@ -99,6 +109,7 @@ export const useUserStore = defineStore('user', () => {
     user,
     users,
     isAuthenticated,
+    resumoTarefas,
     login,
     register,
     logout,

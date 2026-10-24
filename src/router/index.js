@@ -69,6 +69,8 @@ const router = createRouter({
      },
       meta: { requiresAuth: true },
       component: () => import('../components/atalhos/princiapalconfigComponent.vue'),
+      },
+
     },
     {
       path: '/perfil',

@@ -1,5 +1,5 @@
 import { computed, ref } from 'vue'
-import { defineStore } from 'pinia'
+import { acceptHMRUpdate, defineStore } from 'pinia'
 import TarefaService from '@/services/tarefaService'
 
 const tarefaService = new TarefaService()
@@ -143,6 +143,23 @@ export const useTarefaStore = defineStore('tarefa', () => {
         next.value = data.next ?? null
         previous.value = data.previous ?? null
       }
+      return items
+    })
+  }
+
+  // Busca todas as opções sem substituir as tarefas exibidas no Kanban.
+  function getTarefasParaSelecao(projetoId) {
+    return execute(async () => {
+      const items = []
+      let page = 1
+      let temProxima
+      do {
+        const { data } = await tarefaService.getTarefas(projetoId, { page, page_size: 100 })
+        items.push(...(data.results ?? data))
+        temProxima = !Array.isArray(data) &&
+          (Boolean(data.next) || (data.total_pages != null && page < data.total_pages))
+        page++
+      } while (temProxima)
       return items
     })
   }
@@ -297,6 +314,7 @@ export const useTarefaStore = defineStore('tarefa', () => {
     error,
     porStatus,
     getTarefas,
+    getTarefasParaSelecao,
     getTarefa,
     createTarefa,
     updateTarefa,
@@ -306,3 +324,7 @@ export const useTarefaStore = defineStore('tarefa', () => {
 
   }
 })
+
+if (import.meta.hot) {
+  import.meta.hot.accept(acceptHMRUpdate(useTarefaStore, import.meta.hot))
+}
