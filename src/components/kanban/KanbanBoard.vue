@@ -82,6 +82,8 @@ const tasks = computed(() =>
     startDate: date(task.criado_em),
     endDate: date(task.prazo),
     prioridade: task.prioridade,
+    atrasada: !task.concluido_em && Boolean(task.atrasada || task.situacao === 'atrasada'),
+    concluidoEm: task.concluido_em,
     categorias: (task.categoria ?? [])
       .map((categoria) =>
         typeof categoria === 'object'
@@ -89,7 +91,7 @@ const tasks = computed(() =>
           : categoriaStore.categorias.find((item) => item.id === categoria),
       )
       .filter(Boolean),
-  })),
+  })).sort((a, b) => Number(b.atrasada) - Number(a.atrasada)),
 )
 const kabanCategories = computed(() =>
   statusStore.statusesOrdenados.map((status) => ({

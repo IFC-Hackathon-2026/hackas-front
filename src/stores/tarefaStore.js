@@ -182,13 +182,25 @@ export const useTarefaStore = defineStore('tarefa', () => {
               page,
             })
             if (requestVersion !== version) return []
-            items.push(
-              ...(data.results ?? data).map((item) => ({
-                ...item,
-                projeto: item.projeto ?? projetoId,
-                status: item.status ?? status.id,
-              })),
+            const tarefasColuna = await Promise.all(
+              (data.results ?? data).map(async (item) => {
+                let tarefa = item
+                // A listagem resumida não retorna a data de conclusão.
+                if (
+                  (item.situacao === 'concluida' || status.finaliza_task) &&
+                  item.concluido_em === undefined
+                ) {
+                  const { data: detalhes } = await tarefaService.getTarefa(item.id, projetoId)
+                  tarefa = { ...item, ...detalhes }
+                }
+                return {
+                  ...tarefa,
+                  projeto: tarefa.projeto ?? projetoId,
+                  status: tarefa.status ?? status.id,
+                }
+              }),
             )
+            items.push(...tarefasColuna)
             temProxima =
               !Array.isArray(data) &&
               (Boolean(data.next) || (data.total_pages != null && page < data.total_pages))
