@@ -29,6 +29,7 @@ const tarefaForm = reactive({
 const statusSelecionadoId = ref('')
 const categoriaSelecionadaId = ref('')
 const tarefaSelecionadaId = ref('')
+const somenteTarefasAtrasadas = ref(false)
 const documentoSelecionadoId = ref('')
 const documentoArquivo = ref(null)
 const documentoBusca = ref('')
@@ -45,12 +46,25 @@ async function carregarDadosProjeto() {
     () => Promise.all([
       statusStore.getStatuses(id),
       categoriaStore.getCategorias(id),
-      tarefaStore.getTarefas(id, { page_size: 100 }),
+      tarefaStore.getTarefas(id, {
+        page_size: 100,
+        atrasadas: somenteTarefasAtrasadas.value ? 'true' : undefined,
+      }),
       documentoStore.getDocumentos(id, { page_size: 100 }),
     ]),
     'Status, categorias, tarefas e documentos carregados.',
   )
   if (resultado && !tarefaForm.status) tarefaForm.status = statusStore.statusInicial?.id ?? ''
+}
+
+async function listarTarefas() {
+  await run(
+    () => tarefaStore.getTarefas(projetoSelecionadoId.value, {
+      page_size: 100,
+      atrasadas: somenteTarefasAtrasadas.value ? 'true' : undefined,
+    }),
+    somenteTarefasAtrasadas.value ? 'Tarefas atrasadas carregadas.' : 'Todas as tarefas carregadas.',
+  )
 }
 
 async function salvarStatus(criar) {
@@ -117,27 +131,46 @@ async function salvarTarefa(criar) {
       : tarefaStore.updateTarefa(tarefaSelecionadaId.value, projetoId, tarefaPayload()),
     criar ? 'Tarefa criada.' : 'Tarefa atualizada.',
   )
-  if (tarefa) selecionarTarefa(tarefa)
+  if (tarefa) {
+    selecionarTarefa(tarefa)
+    await Promise.all([
+      projetoStore.getProjeto(projetoId),
+      userStore.getMe(),
+    ])
+  }
 }
 
-function selecionarTarefa(tarefa) {
+async function selecionarTarefa(tarefa) {
+  const detalhe = tarefa.descricao === undefined
+    ? await run(
+      () => tarefaStore.getTarefa(tarefa.id, projetoSelecionadoId.value),
+      `Detalhes da tarefa ${tarefa.id} carregados.`,
+    )
+    : tarefa
+  if (!detalhe) return
   tarefaSelecionadaId.value = tarefa.id
   Object.assign(tarefaForm, {
-    titulo: tarefa.titulo ?? '',
-    descricao: tarefa.descricao ?? '',
-    prioridade: tarefa.prioridade ?? 'media',
-    status: typeof tarefa.status === 'object' ? tarefa.status.id : tarefa.status,
-    prazo: tarefa.prazo ? tarefa.prazo.slice(0, 16) : '',
-    categoria: (tarefa.categoria ?? []).map((item) => typeof item === 'object' ? item.id : item),
-    responsavel: (tarefa.responsavel ?? []).map((item) => typeof item === 'object' ? item.id : item),
+    titulo: detalhe.titulo ?? '',
+    descricao: detalhe.descricao ?? '',
+    prioridade: detalhe.prioridade ?? 'media',
+    status: typeof detalhe.status === 'object' ? detalhe.status.id : detalhe.status,
+    prazo: detalhe.prazo ? detalhe.prazo.slice(0, 16) : '',
+    categoria: (detalhe.categoria ?? []).map((item) => typeof item === 'object' ? item.id : item),
+    responsavel: (detalhe.responsavel ?? []).map((item) => typeof item === 'object' ? item.id : item),
   })
 }
 
 async function excluirTarefa() {
-  await run(
+  const excluida = await run(
     () => tarefaStore.deleteTarefa(tarefaSelecionadaId.value, projetoSelecionadoId.value),
     'Tarefa excluída.',
   )
+  if (excluida !== null) {
+    await Promise.all([
+      projetoStore.getProjeto(projetoSelecionadoId.value),
+      userStore.getMe(),
+    ])
+  }
   tarefaSelecionadaId.value = ''
 }
 
@@ -570,6 +603,12 @@ function logout() {
             <small>ID: {{ userStore.user.id }}</small>
           </div>
         </div>
+        <p v-if="userStore.user">
+          Tarefas do perfil — progresso: {{ userStore.resumoTarefas.progresso }}% ·
+          concluídas: {{ userStore.resumoTarefas.concluidas }} ·
+          não concluídas: {{ userStore.resumoTarefas.nao_concluidas }} ·
+          atrasadas: {{ userStore.resumoTarefas.atrasadas }}
+        </p>
         <p v-else>Nenhum usuário foi carregado.</p>
         <pre>{{ JSON.stringify(userStore.user, null, 2) }}</pre>
       </section>
@@ -667,6 +706,21 @@ function logout() {
             <p>{{ projetoStore.projetoAtual.nome }} · ID {{ projetoStore.projetoAtual.id }}</p>
             <p>Cargo: {{ projetoStore.meuCargo || 'Sem participação' }}</p>
             <p>Pode editar: {{ projetoStore.podeEditar ? 'Sim' : 'Não' }} · Pode excluir: {{ projetoStore.podeExcluir ? 'Sim' : 'Não' }}</p>
+            <template v-if="projetoStore.projetoAtual.resumo_tarefas">
+              <h4 class="spaced">Resumo do dashboard</h4>
+              <p>
+                Progresso: {{ projetoStore.resumoTarefas.progresso }}% ·
+                Atrasadas: {{ projetoStore.resumoTarefas.atrasadas }} ·
+                Concluídas: {{ projetoStore.resumoTarefas.concluidas }} ·
+                Não concluídas: {{ projetoStore.resumoTarefas.nao_concluidas }}
+              </p>
+              <ul>
+                <li v-for="item in projetoStore.desempenhoParticipantes" :key="item.usuario.id">
+                  {{ item.usuario.name || item.usuario.email }} —
+                  atrasadas: {{ item.atrasadas }} · concluídas: {{ item.concluidas }}
+                </li>
+              </ul>
+            </template>
             <img v-if="projetoStore.projetoAtual.foto?.url" class="project-photo" :src="resolveMediaUrl(projetoStore.projetoAtual.foto.url)" alt="Foto do projeto" />
             <div class="photo-update">
               <label>Foto<input type="file" accept="image/png,image/jpeg" @change="projetoPhoto = $event.target.files?.[0] ?? null" /></label>
@@ -726,6 +780,7 @@ function logout() {
                 <option value="pendente">Pendente</option>
                 <option value="aceito">Aceito</option>
                 <option value="recusado">Recusado</option>
+                <option value="removido">Removido da equipe</option>
               </select>
             </label>
             <label>Tipo
@@ -854,6 +909,12 @@ function logout() {
         <section class="card card-wide">
           <h3>Tarefas</h3>
           <p><code>GET/POST/PATCH/DELETE /tarefas/</code></p>
+          <form class="inline-form" @submit.prevent="listarTarefas">
+            <label class="checkbox-label">
+              <input v-model="somenteTarefasAtrasadas" type="checkbox" /> Somente atrasadas
+            </label>
+            <button>Aplicar filtro</button>
+          </form>
           <form @submit.prevent="salvarTarefa(true)">
             <label>Título<input v-model="tarefaForm.titulo" maxlength="150" required /></label>
             <label>Descrição<textarea v-model="tarefaForm.descricao" rows="3"></textarea></label>
@@ -891,13 +952,18 @@ function logout() {
 
           <div class="table-wrapper spaced">
             <table>
-              <thead><tr><th>ID</th><th>Título</th><th>Prioridade</th><th>Status</th><th>Ação</th></tr></thead>
+              <thead><tr><th>ID</th><th>Título</th><th>Prioridade</th><th>Criada em</th><th>Prazo</th><th>Categorias</th><th>Ação</th></tr></thead>
               <tbody>
                 <tr v-for="tarefa in tarefaStore.tarefas" :key="tarefa.id">
-                  <td>{{ tarefa.id }}</td><td>{{ tarefa.titulo }}</td><td>{{ tarefa.prioridade }}</td><td>{{ tarefa.status }}</td>
+                  <td>{{ tarefa.id }}</td>
+                  <td>{{ tarefa.titulo }}</td>
+                  <td>{{ tarefa.prioridade }}</td>
+                  <td>{{ new Date(tarefa.criado_em).toLocaleString('pt-BR') }}</td>
+                  <td>{{ tarefa.prazo ? new Date(tarefa.prazo).toLocaleString('pt-BR') : 'Sem prazo' }}</td>
+                  <td>{{ tarefa.categoria?.join(', ') || 'Sem categoria' }}</td>
                   <td><button type="button" class="small" @click="selecionarTarefa(tarefa)">Selecionar</button></td>
                 </tr>
-                <tr v-if="!tarefaStore.tarefas.length"><td colspan="5">Nenhuma tarefa carregada.</td></tr>
+                <tr v-if="!tarefaStore.tarefas.length"><td colspan="7">Nenhuma tarefa carregada.</td></tr>
               </tbody>
             </table>
           </div>

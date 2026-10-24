@@ -16,12 +16,6 @@ export const useTarefaStore = defineStore('tarefa', () => {
   let version = 0
 
   const loading = computed(() => pending.value > 0)
-  const porStatus = computed(() => tarefas.value.reduce((grupos, tarefa) => {
-    const statusId = typeof tarefa.status === 'object' ? tarefa.status.id : tarefa.status
-    ;(grupos[statusId] ??= []).push(tarefa)
-    return grupos
-  }, {}))
-
   async function execute(action) {
     pending.value++
     error.value = null
@@ -113,7 +107,7 @@ export const useTarefaStore = defineStore('tarefa', () => {
   }
 
   return {
-    tarefas, tarefaAtual, projetoAtualId, total, next, previous, loading, error, porStatus,
+    tarefas, tarefaAtual, projetoAtualId, total, next, previous, loading, error,
     getTarefas, getTarefa, createTarefa, updateTarefa, deleteTarefa, reset,
   }
 })

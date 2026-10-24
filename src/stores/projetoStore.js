@@ -26,6 +26,16 @@ export const useProjetoStore = defineStore('projeto', () => {
   const podeEditar = computed(() => ['fundador', 'organizador'].includes(meuCargo.value))
   const podeExcluir = computed(() => meuCargo.value === 'fundador')
   const podeGerenciarParticipantes = computed(() => meuCargo.value === 'fundador')
+  const resumoTarefas = computed(() => projetoAtual.value?.resumo_tarefas ?? {
+    total: 0,
+    concluidas: 0,
+    nao_concluidas: 0,
+    atrasadas: 0,
+    progresso: 0,
+  })
+  const desempenhoParticipantes = computed(() =>
+    projetoAtual.value?.desempenho_participantes ?? [],
+  )
 
   async function execute(action) {
     pending.value++
@@ -147,6 +157,7 @@ export const useProjetoStore = defineStore('projeto', () => {
   return {
     projetos, projetoAtual, total, next, previous, loading, error,
     participantes, meuCargo, podeEditar, podeExcluir, podeGerenciarParticipantes,
+    resumoTarefas, desempenhoParticipantes,
     getProjetos, getMeusProjetos, getProjeto, selecionarProjeto,
     createProjeto, updateProjeto, deleteProjeto, updatePhoto,
     updateParticipante, deleteParticipante, reset,
