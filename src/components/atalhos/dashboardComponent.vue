@@ -1,3 +1,4 @@
+
 <script setup>
 import { computed, onScopeDispose, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
@@ -10,7 +11,9 @@ const route = useRoute()
 const projetoStore = useProjetoStore()
 const tarefaStore = useTarefaStore()
 const statusStore = useStatusStore()
+
 const equipeId = computed(() => String(route.params.id ?? route.query.id ?? ''))
+
 const equipe = ref(null)
 const tarefas = ref([])
 const statuses = ref([])
@@ -18,35 +21,106 @@ const carregando = ref(false)
 const erro = ref('')
 const fotosComErro = ref(new Set())
 const agora = ref(Date.now())
+
 let consulta = 0
-const idDe = (valor) => typeof valor === 'object' ? valor?.id : valor
-const finais = computed(() => new Set(statuses.value.filter((status) => status.finaliza_task).map((status) => String(status.id))))
-const concluida = (tarefa) => finais.value.has(String(idDe(tarefa.status))) || Boolean(tarefa.concluido_em)
-const atrasada = (tarefa) => !concluida(tarefa) && tarefa.prazo && new Date(tarefa.prazo).getTime() < agora.value
-const concluidas = computed(() => tarefas.value.filter(concluida).length)
-const atrasadas = computed(() => tarefas.value.filter(atrasada).length)
-const progresso = computed(() => tarefas.value.length ? Math.round(concluidas.value / tarefas.value.length * 100) : 0)
-const participantes = computed(() => [...(equipe.value?.participacoes ?? [])]
-  .sort((a, b) => ({ fundador: 0, organizador: 1 }[a.cargo] ?? 2) - ({ fundador: 0, organizador: 1 }[b.cargo] ?? 2))
-  .map((participacao) => {
-    const minhas = tarefas.value.filter((tarefa) => (tarefa.responsavel ?? []).some((usuario) => String(idDe(usuario)) === String(idDe(participacao.usuario))))
-    return { ...participacao, total: minhas.length, concluidas: minhas.filter(concluida).length, atrasadas: minhas.filter(atrasada).length }
-  }))
+
+const idDe = (valor) =>
+  valor !== null && typeof valor === 'object' ? valor.id : valor
+
+const statusFinal = computed(() =>
+  new Set(
+    statuses.value
+      .filter((status) => status.finaliza_task === true)
+      .map((status) => String(status.id))
+  )
+)
+
+const concluida = (tarefa) =>
+  Boolean(tarefa.concluido_em) ||
+  tarefa.situacao === 'concluida' ||
+  statusFinal.value.has(String(idDe(tarefa.status)))
+
+const atrasada = (tarefa) =>
+  !concluida(tarefa) &&
+  Boolean(tarefa.prazo) &&
+  new Date(tarefa.prazo).getTime() < agora.value
+
+const pendente = (tarefa) =>
+  !concluida(tarefa) && !atrasada(tarefa)
+
+const concluidas = computed(() =>
+  tarefas.value.filter(concluida).length
+)
+
+const atrasadas = computed(() =>
+  tarefas.value.filter(atrasada).length
+)
+
+const pendentes = computed(() =>
+  tarefas.value.filter(pendente).length
+)
+
+const progresso = computed(() =>
+  tarefas.value.length
+    ? Math.round((concluidas.value / tarefas.value.length) * 100)
+    : 0
+)
+
+const participantes = computed(() =>
+  [...(equipe.value?.participacoes ?? [])]
+    .sort(
+      (a, b) =>
+        ({ fundador: 0, organizador: 1 }[a.cargo] ?? 2) -
+        ({ fundador: 0, organizador: 1 }[b.cargo] ?? 2)
+    )
+    .map((participacao) => {
+      const usuarioId = String(idDe(participacao.usuario))
+
+      const minhas = tarefas.value.filter((tarefa) => {
+        const responsaveis = tarefa.responsavel ?? []
+
+        const lista = Array.isArray(responsaveis)
+          ? responsaveis
+          : [responsaveis]
+
+        return lista.some(
+          (responsavel) =>
+            String(idDe(responsavel)) === usuarioId
+        )
+      })
+
+      return {
+        ...participacao,
+        total: minhas.length,
+        concluidas: minhas.filter(concluida).length,
+        atrasadas: minhas.filter(atrasada).length,
+        pendentes: minhas.filter(pendente).length,
+      }
+    })
+)
 
 function fotoUrl(usuario) {
-  return usuario?.foto?.url ? new URL(usuario.foto.url, new URL(api.defaults.baseURL, window.location.origin)).href : ''
+  return usuario?.foto?.url
+    ? new URL(
+        usuario.foto.url,
+        new URL(api.defaults.baseURL, window.location.origin)
+      ).href
+    : ''
 }
 
 async function carregar() {
   const atual = ++consulta
   const id = equipeId.value
+
   equipe.value = null
   tarefas.value = []
   statuses.value = []
   fotosComErro.value = new Set()
   erro.value = ''
   carregando.value = Boolean(id)
+
   if (!id) return
+
   try {
     const resultados = await Promise.allSettled([
       projetoStore.selecionarProjeto(id),
@@ -54,62 +128,187 @@ async function carregar() {
       (async () => {
         const todas = []
         let params = { page_size: 100 }
+
         do {
           const pagina = await tarefaStore.getTarefas(id, params)
+
           if (atual !== consulta) return []
+
           todas.push(...pagina)
-          params = tarefaStore.next ? Object.fromEntries(new URL(tarefaStore.next, window.location.origin).searchParams) : null
+
+          params = tarefaStore.next
+            ? Object.fromEntries(
+                new URL(
+                  tarefaStore.next,
+                  window.location.origin
+                ).searchParams
+              )
+            : null
         } while (params)
+
         return todas
       })(),
     ])
+
     if (atual !== consulta) return
-    const falha = resultados.find((resultado) => resultado.status === 'rejected')
+
+    const falha = resultados.find(
+      (resultado) => resultado.status === 'rejected'
+    )
+
     if (falha) throw falha.reason
+
+    const listaTarefas = resultados[2].value
+
+    const detalhes = await Promise.all(
+      listaTarefas.map((tarefa) =>
+        tarefaStore.getTarefa(tarefa.id, id)
+      )
+    )
+
+    if (atual !== consulta) return
+
     equipe.value = resultados[0].value
     statuses.value = resultados[1].value
-    tarefas.value = resultados[2].value
+    tarefas.value = detalhes
     agora.value = Date.now()
   } catch (error) {
-    if (atual === consulta) erro.value = error.response?.data?.detail || 'Não foi possível carregar o dashboard desta equipe.'
+    if (atual === consulta) {
+      erro.value =
+        error.response?.data?.detail ||
+        'Não foi possível carregar o dashboard desta equipe.'
+    }
   } finally {
-    if (atual === consulta) carregando.value = false
+    if (atual === consulta) {
+      carregando.value = false
+    }
   }
 }
+
 watch(equipeId, carregar, { immediate: true })
-onScopeDispose(() => { consulta++ })
+
+onScopeDispose(() => {
+  consulta++
+})
 </script>
 
 <template>
   <section class="dashboard" aria-labelledby="dashboard-title">
-    <h1 id="dashboard-title">Dashboard <span v-if="equipe">— {{ equipe.nome }}</span></h1>
-    <p v-if="!equipeId">Abra o dashboard pelo ID da equipe.</p>
-    <p v-else-if="carregando" role="status">Carregando dashboard...</p>
-    <div v-else-if="erro" role="alert"><p>{{ erro }}</p><button type="button" @click="carregar">Tentar novamente</button></div>
+
+    <p v-if="!equipeId">
+      Abra o dashboard pelo ID da equipe.
+    </p>
+
+    <p v-else-if="carregando" role="status">
+      Carregando dashboard...
+    </p>
+
+    <div v-else-if="erro" role="alert">
+      <p>{{ erro }}</p>
+      <button type="button" @click="carregar">
+        Tentar novamente
+      </button>
+    </div>
+
     <template v-else-if="equipe">
       <div class="summary">
-        <div><strong>{{ tarefas.length }}</strong><span>Tarefas no total</span></div>
-        <div><strong>{{ concluidas }}</strong><span>Concluídas</span></div>
-        <div><strong>{{ tarefas.length - concluidas }}</strong><span>Pendentes</span></div>
-        <div><strong class="overdue">{{ atrasadas }}</strong><span>Atrasadas</span></div>
+        <div>
+          <strong>{{ tarefas.length }}</strong>
+          <span>Tarefas no total</span>
+        </div>
+
+        <div>
+          <strong>{{ concluidas }}</strong>
+          <span>Concluídas</span>
+        </div>
+
+        <div>
+          <strong>{{ pendentes }}</strong>
+          <span>Pendentes</span>
+        </div>
+
+        <div>
+          <strong class="overdue">{{ atrasadas }}</strong>
+          <span>Atrasadas</span>
+        </div>
       </div>
+
       <div class="progress-section">
-        <div class="progress-heading"><h2>Progresso da equipe</h2><span>{{ progresso }}%</span></div>
-        <progress :value="progresso" max="100" aria-label="Progresso das tarefas da equipe">{{ progresso }}%</progress>
-        <p>{{ concluidas }} de {{ tarefas.length }} tarefas concluídas</p>
+        <div class="progress-heading">
+          <h2>Progresso da equipe</h2>
+          <span>{{ progresso }}%</span>
+        </div>
+
+        <progress
+          :value="progresso"
+          max="100"
+          aria-label="Progresso das tarefas da equipe"
+        >
+          {{ progresso }}%
+        </progress>
+
+        <p>
+          {{ concluidas }} de {{ tarefas.length }}
+          {{ tarefas.length <= 1 ? 'tarefa concluída' : 'tarefas concluídas' }}
+        </p>
       </div>
+
       <ul v-if="participantes.length" class="members">
-        <li v-for="participante in participantes" :key="participante.id" class="member">
-          <img v-if="fotoUrl(participante.usuario) && !fotosComErro.has(participante.id)" :src="fotoUrl(participante.usuario)" class="avatar" alt="" @error="fotosComErro.add(participante.id)" />
-          <span v-else class="avatar placeholder" aria-hidden="true"></span>
+        <li
+          v-for="participante in participantes"
+          :key="participante.id"
+          class="member"
+        >
+          <img
+            v-if="
+              fotoUrl(participante.usuario) &&
+              !fotosComErro.has(participante.id)
+            "
+            :src="fotoUrl(participante.usuario)"
+            class="avatar"
+            alt=""
+            @error="fotosComErro.add(participante.id)"
+          />
+
+          <span
+            v-else
+            class="avatar placeholder"
+            aria-hidden="true"
+          ></span>
+
           <div class="member-info">
-            <h2>{{ participante.usuario?.name || 'Participante' }} <span v-if="['fundador', 'organizador'].includes(participante.cargo)" class="mdi mdi-crown crown" :title="participante.cargo" aria-hidden="true"></span></h2>
-            <p>{{ participante.concluidas }} de {{ participante.total }} tarefas concluídas</p>
-            <p class="overdue">{{ participante.atrasadas }} tarefa(s) atrasada(s)</p>
+            <h2>
+              {{ participante.usuario?.name || 'Participante' }}
+
+              <span
+                v-if="
+                  ['fundador', 'organizador'].includes(
+                    participante.cargo
+                  )
+                "
+                class="mdi mdi-crown crown"
+                :title="participante.cargo"
+                aria-hidden="true"
+              ></span>
+            </h2>
+
+            <p>
+              {{ participante.concluidas }} de
+              {{ participante.total }}
+              {{ participante.total <= 1 ? 'tarefa concluída' : 'tarefas concluídas' }}
+            </p>
+
+            <p class="overdue">
+              {{ participante.atrasadas }}
+              {{ participante.atrasadas <= 1 ? 'tarefa atrasada' : 'tarefas atrasadas' }}
+            </p>
           </div>
         </li>
       </ul>
-      <p v-else>Nenhum participante nesta equipe.</p>
+
+      <p v-else>
+        Nenhum participante nesta equipe.
+      </p>
     </template>
   </section>
 </template>
@@ -141,11 +340,15 @@ h1 span {
 .summary > div {
   display: flex;
   flex-direction: column;
+  align-items: center;
+  text-align: center;
   gap: 6px;
 }
 
 .summary strong {
   font-size: 32px;
+  line-height: 1.2;
+  font-variant-numeric: tabular-nums;
 }
 
 .summary span {
@@ -262,10 +465,12 @@ button {
   .summary {
     grid-template-columns: repeat(2, 1fr);
   }
+
   .members {
     grid-template-columns: 1fr;
     gap: 32px;
   }
+
   .dashboard {
     margin-top: 28px;
   }

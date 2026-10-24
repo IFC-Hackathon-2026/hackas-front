@@ -184,25 +184,24 @@ async function excluirEquipe() {
 
 @media (min-width: 950px) {
   .config {
-    flex-direction: row;
-    gap: 0;
-    min-height: calc(100dvh - 220px);
-  }
+  flex-direction: row;
+  gap: 0;
+  min-height: 400px;
+}
 
   .sidebar {
-    width: 260px;
-    position: sticky;
-    top: 110px;
-    height: calc(100dvh - 160px);
-    min-height: 400px;
-    align-self: flex-start;
-    padding-bottom: 24px;
-    flex-shrink: 0;
-    justify-content: space-between;
-    padding-right: 1.5rem;
-    border-right: 1px solid #dedede;
-  }
-
+  width: 260px;
+  position: relative;
+  top: auto;
+  height: auto;
+  min-height: 400px;
+  align-self: stretch;
+  padding-bottom: 24px;
+  flex-shrink: 0;
+  justify-content: space-between;
+  padding-right: 1.5rem;
+  border-right: 1px solid #dedede;
+}
   .abas {
     flex-direction: column;
     gap: 0.5rem;
@@ -223,6 +222,6 @@ async function excluirEquipe() {
   .config { margin-top: 24px; }
   .sidebar { padding-bottom: 20px; border-bottom: 1px solid #dedede; }
   .abas { flex-wrap: wrap; }
-  .excluir { font-size: 1rem; }
+  .excluir { font-size: 1rem; } 
 }
 </style>
