@@ -1,10 +1,12 @@
 <script setup>
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
+import { storeToRefs } from 'pinia'
 import { useProjetoStore } from '@/stores/projetoStore'
 import { useTarefaStore } from '@/stores/tarefaStore'
 import { useStatusStore } from '@/stores/statusStore'
 import { useCategoriaStore } from '@/stores/categoriaStore'
 import KanbanColumn from './KanbanColumn.vue'
+import KanbanToolBar from './KanbanToolBar.vue'
 import AppModal from '../modais/AppModal.vue'
 import TaskForm from '../tasks/TaskForm.vue'
 
@@ -18,6 +20,42 @@ const loading = ref(false)
 const error = ref('')
 const notice = ref('')
 let request = 0
+const { filtros } = storeToRefs(tarefaStore)
+const buscando = ref(false)
+const erroBusca = ref('')
+let tempoBusca
+let versaoBusca = 0
+
+async function buscarTarefas() {
+  if (!selectedProject.value || loading.value) return
+  const versao = ++versaoBusca
+  buscando.value = true
+  erroBusca.value = ''
+  try {
+    await tarefaStore.getTarefasKanban(selectedProject.value, statusStore.statusesOrdenados)
+  } catch {
+    if (versao === versaoBusca)
+      erroBusca.value = 'Não foi possível filtrar as tarefas. Tente novamente.'
+  } finally {
+    if (versao === versaoBusca) buscando.value = false
+  }
+}
+
+watch(
+  () => [
+    filtros.value.search,
+    [...filtros.value.categoria],
+    [...filtros.value.responsavel],
+    filtros.value.prioridade,
+    filtros.value.atrasadas,
+  ],
+  () => {
+    if (loading.value) return
+    clearTimeout(tempoBusca)
+    tempoBusca = setTimeout(buscarTarefas, 350)
+  },
+)
+onUnmounted(() => clearTimeout(tempoBusca))
 const date = (value) =>
   value
     ? /^\d{4}-\d{2}-\d{2}$/.test(value)
@@ -25,7 +63,7 @@ const date = (value) =>
       : new Date(value).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })
     : '—'
 const tasks = computed(() =>
-  tarefaStore.tarefas.map((task) => ({
+  tarefaStore.tarefasFiltradas.map((task) => ({
     id: task.id,
     categoryId: task.status?.id ?? task.status,
     title: task.titulo,
@@ -33,9 +71,11 @@ const tasks = computed(() =>
     endDate: date(task.prazo),
     prioridade: task.prioridade,
     categorias: (task.categoria ?? [])
-      .map((categoria) => typeof categoria === 'object'
-        ? categoria
-        : categoriaStore.categorias.find((item) => item.id === categoria))
+      .map((categoria) =>
+        typeof categoria === 'object'
+          ? categoria
+          : categoriaStore.categorias.find((item) => item.id === categoria),
+      )
       .filter(Boolean),
   })),
 )
@@ -49,6 +89,11 @@ const kabanCategories = computed(() =>
 )
 async function loadProject() {
   const current = ++request
+  clearTimeout(tempoBusca)
+  versaoBusca++
+  buscando.value = false
+  erroBusca.value = ''
+  loading.value = Boolean(selectedProject.value)
   showModal.value = false
   error.value = ''
   notice.value = ''
@@ -60,10 +105,11 @@ async function loadProject() {
     await projetoStore.selecionarProjeto(selectedProject.value)
     if (current !== request) return
     await Promise.all([
-      tarefaStore.getTarefas(selectedProject.value, { page_size: 100 }, true),
       statusStore.getStatuses(selectedProject.value),
       categoriaStore.getCategorias(selectedProject.value),
     ])
+    if (current !== request) return
+    await tarefaStore.getTarefasKanban(selectedProject.value, statusStore.statusesOrdenados)
   } catch {
     if (current === request) error.value = 'Não foi possível carregar o projeto.'
   } finally {
@@ -93,9 +139,10 @@ function openTask(statusId) {
   tarefaStore.resetTarefa(Number(selectedProject.value), statusId)
   showModal.value = true
 }
-function saved() {
+async function saved() {
   showModal.value = false
   notice.value = 'Tarefa criada com sucesso.'
+  await buscarTarefas()
 }
 </script>
 
@@ -115,6 +162,20 @@ function saved() {
       </label>
       <p v-if="notice" role="status">{{ notice }}</p>
     </div>
+    <KanbanToolBar
+      v-model="filtros"
+      @limpar="tarefaStore.limparFiltros"
+      :categorias="categoriaStore.categoriasOrdenadas"
+      :usuarios="projetoStore.participantes"
+      :desabilitado="!selectedProject || loading"
+    />
+    <p v-if="buscando" role="status">Buscando tarefas…</p>
+    <div v-if="erroBusca" role="alert">
+      {{ erroBusca }} <button type="button" @click="buscarTarefas">Tentar novamente</button>
+    </div>
+    <p v-if="selectedProject && !loading && !buscando && !erroBusca && !tasks.length" role="status">
+      Nenhuma tarefa encontrada.
+    </p>
     <p v-if="loading" role="status">Carregando quadro…</p>
     <div v-else-if="error" role="alert">
       <p>{{ error }}</p>

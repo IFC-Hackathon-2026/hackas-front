@@ -472,6 +472,7 @@ function logout() {
 
 <template>
   <main class="playground">
+    <KanbanBoard />
     <header class="page-header">
       <div>
         <p class="eyebrow">Farol Flow</p>

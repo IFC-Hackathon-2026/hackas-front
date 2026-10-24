@@ -48,6 +48,7 @@ defineProps({
   z-index: 0;
   width: 100%;
   height: 50px;
+  flex-shrink: 0;
   background: var(--button-background) !important;
   color: var(--button-text) !important;
   font-size: 1.25rem;
