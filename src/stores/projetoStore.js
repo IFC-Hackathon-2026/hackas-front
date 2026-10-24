@@ -1,10 +1,15 @@
 import { computed, ref } from 'vue'
 import { defineStore } from 'pinia'
 import ProjetoService from '@/services/projetoService'
+import { useUserStore } from '@/stores/userStore'
 
 const projetoService = new ProjetoService()
 
 export const useProjetoStore = defineStore('projeto', () => {
+  const userStore = useUserStore()
+  let selecao = 0
+  let consultaAtual = null
+  let idConsulta = null
   const projetos = ref([])
   const projetoAtual = ref(null)
   const total = ref(0)
@@ -24,8 +29,17 @@ export const useProjetoStore = defineStore('projeto', () => {
   )
   const meuCargo = computed(() => projetoAtual.value?.meu_cargo ?? null)
   const podeEditar = computed(() => ['fundador', 'organizador'].includes(meuCargo.value))
-  const podeExcluir = computed(() => meuCargo.value === 'fundador')
-  const podeGerenciarParticipantes = computed(() => meuCargo.value === 'fundador')
+
+  const podeExcluir = computed(() => {
+    const usuarioId = userStore.user?.id
+    const criador = projetoAtual.value?.criador
+    const criadorId = typeof criador === 'object' ? criador?.id : criador
+    return meuCargo.value === 'fundador' || (
+      usuarioId != null && criadorId != null && String(usuarioId) === String(criadorId)
+    )
+  })
+  const podeConfigurar = computed(() => podeExcluir.value || meuCargo.value === 'organizador')
+
 
   async function execute(action) {
     pending.value++
@@ -70,12 +84,26 @@ export const useProjetoStore = defineStore('projeto', () => {
     })
   }
 
-  async function selecionarProjeto(id) {
+  function selecionarProjeto(id) {
+    if (consultaAtual && idConsulta === String(id)) return consultaAtual
+    const atual = ++selecao
+    idConsulta = String(id)
     // Busca os detalhes para manter participações e permissões atualizadas.
     projetoAtual.value = null
-    const projeto = await getProjeto(id)
-    projetoAtual.value = projeto
-    return projeto
+    consultaAtual = (async () => {
+      try {
+        if (!userStore.user && userStore.isAuthenticated) await userStore.getMe()
+        const projeto = await getProjeto(id)
+        if (atual === selecao) projetoAtual.value = projeto
+        return projeto
+      } finally {
+        if (atual === selecao) {
+          consultaAtual = null
+          idConsulta = null
+        }
+      }
+    })()
+    return consultaAtual
   }
 
   function createProjeto(payload) {
@@ -136,6 +164,9 @@ export const useProjetoStore = defineStore('projeto', () => {
   }
 
   function reset() {
+    selecao++
+    consultaAtual = null
+    idConsulta = null
     projetos.value = []
     projetoAtual.value = null
     total.value = 0
@@ -146,7 +177,7 @@ export const useProjetoStore = defineStore('projeto', () => {
 
   return {
     projetos, projetoAtual, total, next, previous, loading, error,
-    participantes, meuCargo, podeEditar, podeExcluir, podeGerenciarParticipantes,
+    participantes, meuCargo, podeEditar, podeExcluir, podeConfigurar,
     getProjetos, getMeusProjetos, getProjeto, selecionarProjeto,
     createProjeto, updateProjeto, deleteProjeto, updatePhoto,
     updateParticipante, deleteParticipante, reset,
