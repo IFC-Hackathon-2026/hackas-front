@@ -4,7 +4,31 @@ import TarefaService from '@/services/tarefaService'
 
 const tarefaService = new TarefaService()
 
+function criarTarefaBase() {
+  return {
+    id: null,
+    titulo: '',
+    descricao: '',
+    prioridade: 'baixa',
+    prazo: null,
+    criado_em: null,
+    atualizado_em: null,
+    concluido_em: null,
+    projeto: null,
+    status: null,
+    criado_por: null,
+    categoria: [],
+    responsavel: [],
+  }
+}
+
 export const useTarefaStore = defineStore('tarefa', () => {
+  const tarefa = ref(criarTarefaBase())
+
+  function resetTarefa(projeto = null, status = null) {
+    tarefa.value = { ...criarTarefaBase(), projeto, status }
+  }
+
   const tarefas = ref([])
   const tarefaAtual = ref(null)
   const projetoAtualId = ref(null)
@@ -17,7 +41,7 @@ export const useTarefaStore = defineStore('tarefa', () => {
 
   const loading = computed(() => pending.value > 0)
   const porStatus = computed(() => tarefas.value.reduce((grupos, tarefa) => {
-    const statusId = typeof tarefa.status === 'object' ? tarefa.status.id : tarefa.status
+    const statusId = tarefa.status?.id ?? tarefa.status
     ;(grupos[statusId] ??= []).push(tarefa)
     return grupos
   }, {}))
@@ -43,13 +67,20 @@ export const useTarefaStore = defineStore('tarefa', () => {
     if (tarefaAtual.value?.id === tarefa.id) tarefaAtual.value = tarefa
   }
 
-  function getTarefas(projetoId, params = {}) {
+  function getTarefas(projetoId, params = {}, todas = false) {
     return execute(async () => {
       const requestVersion = ++version
       if (String(projetoAtualId.value) !== String(projetoId)) tarefas.value = []
       projetoAtualId.value = projetoId
-      const { data } = await tarefaService.getTarefas(projetoId, params)
-      const items = data.results ?? data
+      let { data } = await tarefaService.getTarefas(projetoId, params)
+      const items = [...(data.results ?? data)]
+      let page = params.page ?? 1
+      while (todas && !Array.isArray(data) && (data.next || (data.total_pages != null && page < data.total_pages))) {
+        if (requestVersion !== version) return items
+        page++
+        ;({ data } = await tarefaService.getTarefas(projetoId, { ...params, page }))
+        items.push(...(data.results ?? data))
+      }
       if (requestVersion === version) {
         tarefas.value = items
         total.value = data.count ?? items.length
@@ -103,6 +134,7 @@ export const useTarefaStore = defineStore('tarefa', () => {
 
   function reset() {
     version++
+    resetTarefa()
     tarefas.value = []
     tarefaAtual.value = null
     projetoAtualId.value = null
@@ -113,7 +145,7 @@ export const useTarefaStore = defineStore('tarefa', () => {
   }
 
   return {
-    tarefas, tarefaAtual, projetoAtualId, total, next, previous, loading, error, porStatus,
-    getTarefas, getTarefa, createTarefa, updateTarefa, deleteTarefa, reset,
+    tarefa, tarefas, tarefaAtual, projetoAtualId, total, next, previous, loading, error, porStatus,
+    getTarefas, getTarefa, createTarefa, updateTarefa, deleteTarefa, reset, resetTarefa,
   }
 })

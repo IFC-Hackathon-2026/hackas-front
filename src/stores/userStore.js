@@ -38,8 +38,16 @@ export const useUserStore = defineStore('user', () => {
   }
 
   async function getAllUsers() {
-    const { data } = await userService.getAllUsers();
-    users.value = data.results ?? data;
+    const items = [];
+    let page = 1;
+    let hasNext;
+    do {
+      const { data } = await userService.getAllUsers({ page, page_size: 100 });
+      items.push(...(data.results ?? data));
+      hasNext = !Array.isArray(data) && (Boolean(data.next) || (data.total_pages != null && page < data.total_pages));
+      page++;
+    } while (hasNext);
+    users.value = items;
     return users.value;
   }
 
