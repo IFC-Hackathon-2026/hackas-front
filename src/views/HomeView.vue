@@ -112,7 +112,7 @@ function voltarAoTopo() {
           </button>
         </div>
 
-        <ul class="lista-eventos">
+        <ul class="lista-eventos" tabindex="0" aria-label="Eventos em destaque">
           <li
             v-for="evento in eventosDestaque"
             :key="evento.id"
@@ -564,6 +564,69 @@ function voltarAoTopo() {
   .evento-imagem img,
   .evento-seta {
     transition: none;
+  }
+}
+
+@media (max-width: 600px) {
+  .destaques-cabecalho {
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+  }
+  .link-ver-todos {
+    min-height: 44px;
+    flex-shrink: 0;
+    gap: 0.5rem;
+    font-size: 0.875rem;
+  }
+  .lista-eventos {
+    display: flex;
+    gap: 16px;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    scroll-padding-inline: 4px;
+    overscroll-behavior-x: contain;
+    padding: 12px 4px 24px;
+    scrollbar-width: thin;
+  }
+  .card-evento {
+    flex: 0 0 85%;
+    min-width: 0;
+    scroll-snap-align: start;
+  }
+  .card-evento:hover {
+    transform: none;
+  }
+  .evento-imagem {
+    height: 180px;
+  }
+  .evento-informacoes {
+    padding: 14px;
+    min-height: 88px;
+  }
+  .evento-textos h3 {
+    font-size: 1rem;
+  }
+  .evento-textos p {
+    font-size: 0.875rem;
+  }
+  .evento-seta {
+    display: grid;
+    place-items: center;
+    min-width: 44px;
+    min-height: 44px;
+  }
+  .lista-eventos:focus-visible {
+    outline: 2px solid #2767aa;
+    outline-offset: 4px;
+  }
+  .compromisso {
+    padding: 40px 24px;
+  }
+  .compromisso h2 {
+    font-size: 1.25rem;
+  }
+  .compromisso p {
+    line-height: 1.6;
   }
 }
 </style>

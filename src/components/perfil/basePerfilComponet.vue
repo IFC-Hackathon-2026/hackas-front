@@ -152,6 +152,14 @@ function sair() {
     </aside>
 
     <!-- Conteúdo -->
+    <nav class="mobile-profile-tabs" aria-label="Seções do perfil">
+      <button type="button" :class="{ ativa: aba === 'info' }" :aria-pressed="aba === 'info'" @click="aba = 'info'">
+        Informações pessoais
+      </button>
+      <button type="button" :class="{ ativa: aba === 'atividade' }" :aria-pressed="aba === 'atividade'" @click="aba = 'atividade'">
+        Sua atividade
+      </button>
+    </nav>
     <div class="conteudo">
       <header class="topo">
         <button type="button" class="voltar" aria-label="Voltar" @click="router.back()">
@@ -248,6 +256,10 @@ function sair() {
         </template>
       </div>
     </div>
+    <button type="button" class="mobile-profile-logout" @click="sair">
+      <span class="mdi mdi-logout" aria-hidden="true"></span>
+      Sair da conta
+    </button>
   </section>
 </template>
 
@@ -662,5 +674,143 @@ input:focus-visible {
   .topo h1 {
     font-size: 1.5rem;
   }
+}
+
+@media (max-width: 600px) {
+  .profile {
+    padding-block: 1.5rem;
+    gap: 1.5rem;
+  }
+  .sidebar-user {
+    gap: 0.75rem;
+  }
+  .sidebar-info strong,
+  .sidebar-info span {
+    overflow-wrap: anywhere;
+  }
+  .topo {
+    gap: 0.5rem;
+  }
+  .topo h1 {
+    font-size: 1.4rem;
+  }
+  .topo p {
+    font-size: 0.75rem;
+    line-height: 1.5;
+  }
+  .card {
+    padding: 1rem;
+  }
+  .card h2 {
+    font-size: 1.125rem;
+  }
+  .campo,
+  .foto-acoes {
+    min-width: 0;
+  }
+  label,
+  .foto-titulo {
+    font-size: 0.9375rem;
+  }
+  .foto-box {
+    padding: 1rem;
+  }
+  .foto-conteudo {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+  .foto-preview {
+    width: 80px;
+    height: 80px;
+  }
+  .btn-salvar {
+    width: 100%;
+  }
+  .btn-salvar,
+  .btn-alterar,
+  .aba,
+  .sair,
+  .voltar {
+    min-height: 44px;
+  }
+  .voltar {
+    min-width: 44px;
+    flex-shrink: 0;
+  }
+  .feedback {
+    overflow-wrap: anywhere;
+    font-size: 0.875rem;
+  }
+}
+
+
+
+@media (max-width: 600px) {
+  .foto-conteudo {
+    flex-direction: row;
+    align-items: center;
+    gap: 0.75rem;
+  }
+  .foto-preview {
+    width: 48px;
+    height: 48px;
+  }
+  .foto-acoes { flex: 1; gap: 0.375rem; }
+  .btn-alterar {
+    padding: 0.375rem 0.5rem;
+    gap: 0.375rem;
+    font-size: 0.8125rem;
+  }
+  .btn-alterar .mdi { font-size: 1rem; }
+  .foto-acoes small { font-size: 0.6875rem; }
+}
+
+ .mobile-profile-tabs,
+.mobile-profile-logout { display: none; }
+
+@media (max-width: 949px) {
+  .profile { min-height: 0; gap: 1.25rem; padding-bottom: 0.5rem; }
+  .profile > .sidebar { display: none; }
+  .mobile-profile-tabs {
+    display: flex;
+    align-items: stretch;
+    gap: 1rem;
+    border-bottom: 1px solid #d9e1ec;
+  }
+  .mobile-profile-tabs button {
+    min-height: 44px;
+    padding: 0.5rem 0;
+    border: 0;
+    border-bottom: 2px solid transparent;
+    background: transparent;
+    color: var(--azul);
+    font-size: clamp(0.6875rem, 3vw, 0.8125rem);
+    font-weight: 500;
+    cursor: pointer;
+  }
+  .mobile-profile-tabs button.ativa {
+    border-bottom-color: var(--azul);
+    font-weight: 700;
+  }
+  .mobile-profile-logout {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    align-self: stretch;
+    width: 100%;
+    gap: 0.5rem;
+    min-height: 44px;
+    margin-top: -0.75rem;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: var(--azul);
+    font-size: 1rem;
+    cursor: pointer;
+  }
+  .topo { align-items: center; gap: 0.75rem; }
+  .topo .voltar { display: inline-grid; place-items: center; }
+  .topo > div:last-child { min-width: 0; }
 }
 </style>

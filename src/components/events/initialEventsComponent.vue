@@ -207,4 +207,39 @@ import AppInput from '../forms/AppInput.vue';
     position: static;
   }
 }
+
+@media (max-width: 600px) {
+  .events-intro {
+    max-width: 100%;
+    padding-block: 1.5rem;
+  }
+  .title h1 {
+    font-size: 1.5rem;
+  }
+  .title p {
+    font-size: 0.875rem;
+    line-height: 1.5;
+  }
+  .search-toolbar {
+    gap: 1rem;
+  }
+  .search-toolbar :deep(.input-class) {
+    height: 48px;
+    min-width: 0;
+    font-size: 16px;
+  }
+  .category-filter summary {
+    min-height: 48px;
+    font-size: 0.875rem;
+    gap: 0.5rem;
+  }
+  .filter-panel {
+    box-sizing: border-box;
+    padding: 0.75rem;
+  }
+  .category-option {
+    min-height: 44px;
+    align-items: center;
+  }
+}
 </style>
