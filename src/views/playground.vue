@@ -9,7 +9,6 @@ import { PROJECT_CATEGORIES } from '@/constants/projectCategories'
 import { useTarefaStore } from '@/stores/tarefaStore'
 import { useDocumentoStore } from '@/stores/documentoStore'
 import { usePedidoParticipacaoStore } from '@/stores/pedidoParticipacaoStore'
-import KanbanBoard from '@/components/kanban/KanbanBoard.vue'
 
 defineOptions({ name: 'ApiPlayground' })
 
@@ -520,7 +519,6 @@ function logout() {
 
 <template>
   <main class="playground">
-    <KanbanBoard />
     <header class="page-header">
       <div>
         <p class="eyebrow">Farol Flow</p>
