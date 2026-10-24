@@ -1,6 +1,7 @@
 <script setup>
 import AppButton from '../forms/AppButton.vue';
 import TaskCard from '../tasks/TaskCard.vue';
+const emit = defineEmits(['add-task']);
 
 const props = defineProps({
   kabanCategories: {
@@ -31,7 +32,7 @@ const props = defineProps({
 
       <div class="column-configs">
         <span class="mdi mdi-dots-vertical" title="Configurações"/>
-        <span class="mdi mdi-plus" title="Adicionar Tarefa"/>
+        <button type="button" class="add-task-icon" aria-label="Adicionar tarefa" @click="emit('add-task', c.id)"><span class="mdi mdi-plus" aria-hidden="true" /></button>
       </div>
     </div>
 
@@ -45,7 +46,7 @@ const props = defineProps({
     />
     </div>
 
-    <AppButton class="add-task-button">Adicionar Tarefa <span class="mdi mdi-plus"/></AppButton>
+    <AppButton class="add-task-button" @click="emit('add-task', c.id)">Adicionar Tarefa <span class="mdi mdi-plus"/></AppButton>
 
   </li>
 
@@ -53,6 +54,7 @@ const props = defineProps({
 </template>
 
 <style scoped>
+.add-task-icon { border: 0; background: transparent; color: inherit; cursor: pointer; padding: 0.4rem; }
 .add-task-button {
   margin-top: 1rem;
   width: 100%;
