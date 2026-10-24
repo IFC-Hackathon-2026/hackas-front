@@ -2,6 +2,8 @@
 import { onMounted, reactive, ref } from 'vue'
 import { useUserStore } from '@/stores/userStore'
 import UserService from '@/services/userService'
+import { notificacao } from '@/services/notificacaoService'
+
 
 const userStore = useUserStore()
 const userService = new UserService()
@@ -22,6 +24,7 @@ onMounted(async () => {
     ready.value = true
   } catch {
     error.value = 'Não foi possível carregar seu perfil.'
+    notificacao.erro(error.value)
   } finally {
     fetching.value = false
   }
@@ -33,10 +36,12 @@ async function saveProfile() {
   message.value = ''
   if (!form.name.trim() || !form.email.trim()) {
     error.value = 'Preencha o nome e o e-mail.'
+    notificacao.aviso(error.value)
     return
   }
   if (file.value && !['image/jpeg', 'image/png'].includes(file.value.type)) {
     error.value = 'Selecione uma imagem PNG ou JPEG.'
+    notificacao.aviso(error.value)
     return
   }
   loading.value = true
@@ -52,7 +57,7 @@ async function saveProfile() {
     form.email = user.email ?? ''
     file.value = null
     if (photoInput.value) photoInput.value.value = ''
-    message.value = 'Perfil atualizado com sucesso.'
+    notificacao.sucesso('Perfil atualizado com sucesso.')
   } catch (requestError) {
     const data = requestError.response?.data
     const details = data && typeof data === 'object'
@@ -60,7 +65,8 @@ async function saveProfile() {
           `${({ name: 'Nome', email: 'E-mail', foto_attachment_key: 'Foto', file: 'Foto' })[field] ?? field}: ${Array.isArray(messages) ? messages.join(' ') : messages}`,
         ).join(' ')
       : ''
-    error.value = details || 'Não foi possível salvar o perfil. Tente novamente.'
+    error.value = details || 'Não foi possível atualizar o perfil.'
+    notificacao.erro(error.value)
   } finally {
     loading.value = false
   }
