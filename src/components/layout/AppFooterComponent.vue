@@ -103,6 +103,7 @@ h4 {
   }
 
   .footer-content {
+    display: grid;
     grid-template-columns: 1fr;
     gap: 2rem;
   }

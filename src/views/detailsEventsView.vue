@@ -24,7 +24,7 @@ const route = useRoute()
 .event-details { width: 100%; max-width: 1600px; margin: 48px auto 160px; }
 #event-tasks-title { color: var(--primaria); font-size: 26px; font-weight: 600; }
 @media (max-width: 760px) {
-  .event-details { margin: 28px auto 64px; }
-  #event-tasks-title { font-size: 22px; }
+  .event-details { margin: 20px auto 40px; }
+  #event-tasks-title { font-size: 1.25rem; }
 }
 </style>

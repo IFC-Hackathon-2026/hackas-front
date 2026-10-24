@@ -9,6 +9,39 @@ const emit = defineEmits([
 const menuAberto = ref(null)
 const arrastando = ref(false)
 const colunaDestino = ref(null)
+const columnsList = ref(null)
+const mobile = ref(false)
+let mobileQuery
+let scrollFrame
+let scrollDirection = 0
+
+function updateMobile() {
+  mobile.value = mobileQuery.matches
+}
+
+function scrollWhileDragging() {
+  if (!arrastando.value || !scrollDirection || !columnsList.value) {
+    scrollFrame = undefined
+    return
+  }
+  columnsList.value.scrollLeft += scrollDirection * 12
+  scrollFrame = requestAnimationFrame(scrollWhileDragging)
+}
+
+function updateAutoScroll(evento) {
+  if (!mobile.value || !columnsList.value) return
+  const original = evento.originalEvent
+  const pointer = original?.touches?.[0] ?? original?.changedTouches?.[0] ?? original
+  if (typeof pointer?.clientX !== 'number') return
+  const bounds = columnsList.value.getBoundingClientRect()
+  const edge = Math.min(80, bounds.width * 0.22)
+  scrollDirection = pointer.clientX < bounds.left + edge
+    ? -1
+    : pointer.clientX > bounds.right - edge
+      ? 1
+      : 0
+  if (scrollDirection && !scrollFrame) scrollFrame = requestAnimationFrame(scrollWhileDragging)
+}
 
 function iniciarArraste() {
   menuAberto.value = null
@@ -19,11 +52,15 @@ function iniciarArraste() {
 function terminarArraste() {
   arrastando.value = false
   colunaDestino.value = null
+  scrollDirection = 0
+  if (scrollFrame) cancelAnimationFrame(scrollFrame)
+  scrollFrame = undefined
   emit('drag-state', false)
 }
 
 function indicarDestino(evento) {
   if (props.arrasteDesabilitado) return false
+  updateAutoScroll(evento)
   colunaDestino.value = Number(evento.to.dataset.colunaId)
   return true
 }
@@ -46,8 +83,17 @@ function fecharMenu(evento) {
   if (!evento.target.closest('.column-configs')) menuAberto.value = null
 }
 
-onMounted(() => document.addEventListener('pointerdown', fecharMenu))
-onUnmounted(() => document.removeEventListener('pointerdown', fecharMenu))
+onMounted(() => {
+  mobileQuery = window.matchMedia('(max-width: 760px)')
+  updateMobile()
+  mobileQuery.addEventListener('change', updateMobile)
+  document.addEventListener('pointerdown', fecharMenu)
+})
+onUnmounted(() => {
+  document.removeEventListener('pointerdown', fecharMenu)
+  mobileQuery?.removeEventListener('change', updateMobile)
+  if (scrollFrame) cancelAnimationFrame(scrollFrame)
+})
 
 const props = defineProps({
   kabanCategories: {
@@ -67,6 +113,7 @@ const props = defineProps({
 
 <template>
   <ul
+    ref="columnsList"
     class="columns-list"
     :style="{ '--column-count': props.kabanCategories.length }"
     @keydown.esc="menuAberto = null"
@@ -132,15 +179,20 @@ const props = defineProps({
         :model-value="props.tasks.filter((task) => task.categoryId === c.id)"
         item-key="id"
         group="kanban-tarefas"
-        handle=".task-drag-handle"
+        :handle="mobile ? undefined : '.task-drag-handle'"
         :sort="false"
         :disabled="props.arrasteDesabilitado"
         :animation="180"
-        :delay="150"
+        :delay="mobile ? 220 : 0"
         :delay-on-touch-only="true"
         :touch-start-threshold="5"
-        :scroll-sensitivity="60"
-        :scroll-speed="12"
+        :scroll="true"
+        :bubble-scroll="true"
+        :force-fallback="mobile"
+        :fallback-on-body="true"
+        :fallback-tolerance="5"
+        :scroll-sensitivity="80"
+        :scroll-speed="16"
         ghost-class="task-ghost"
         chosen-class="task-chosen"
         class="column-tasks"
@@ -202,6 +254,7 @@ const props = defineProps({
   gap: 1rem;
   margin-top: 1rem;
   scrollbar-gutter: stable;
+  touch-action: pan-y;
 }
 
 .columns-list {
@@ -211,8 +264,12 @@ const props = defineProps({
   grid-template-columns: repeat(var(--column-count), minmax(17rem, 1fr));
   grid-template-rows: minmax(0, 1fr);
   overflow-x: auto;
+  overflow-y: hidden;
+  overscroll-behavior-x: contain;
+  -webkit-overflow-scrolling: touch;
   gap: 1rem;
   padding-inline: 0;
+  touch-action: pan-x;
 }
 
 .kanban-column {
@@ -252,8 +309,20 @@ const props = defineProps({
 
 @media (max-width: 760px) {
   .columns-list {
-    grid-template-columns: repeat(var(--column-count), minmax(16rem, 1fr));
+    flex: none;
+    height: min(65dvh, 560px);
+    grid-template-columns: repeat(var(--column-count), minmax(82vw, 1fr));
+    grid-template-rows: minmax(0, 1fr);
+    scroll-snap-type: x mandatory;
+    scroll-padding-inline: 1px;
+    overscroll-behavior-x: contain;
+    padding-bottom: 0.5rem;
   }
+  .kanban-column { scroll-snap-align: start; padding: 0.875rem; }
+  .column-title { gap: 0.5rem; }
+  .column-title h3 { font-size: 1rem; }
+  .add-task-icon { width: 44px; height: 44px; }
+  .column-menu button { min-height: 44px; }
 }
 
 .column-header {

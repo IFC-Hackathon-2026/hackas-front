@@ -17,6 +17,7 @@ const router = createRouter({
       alias: '/home',
       name: 'home',
       component: HomeView,
+      meta: { guestOnly: true },
     },
     {
       path: '/eventos',
@@ -77,6 +78,7 @@ const router = createRouter({
       path: '/aboutus',
       name: 'aboutus',
       component: () => import('../views/AboutUsView.vue'),
+      meta: { requiresAuth: true },
     },
     {
       path: '/dashboard/:id',

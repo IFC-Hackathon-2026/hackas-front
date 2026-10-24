@@ -47,6 +47,7 @@ const arrasteDesabilitado = computed(() =>
   statusStore.alterandoColuna || tarefaStore.loading,
 )
 let tempoBusca
+let tempoAviso
 let versaoBusca = 0
 
 async function buscarTarefas() {
@@ -80,7 +81,18 @@ watch(
     tempoBusca = setTimeout(buscarTarefas, 350)
   },
 )
-onUnmounted(() => clearTimeout(tempoBusca))
+onUnmounted(() => {
+  clearTimeout(tempoBusca)
+  clearTimeout(tempoAviso)
+})
+
+function mostrarAvisoTemporario(mensagem) {
+  clearTimeout(tempoAviso)
+  notice.value = mensagem
+  tempoAviso = setTimeout(() => {
+    if (notice.value === mensagem) notice.value = ''
+  }, 4000)
+}
 const date = (value) =>
   value
     ? /^\d{4}-\d{2}-\d{2}$/.test(value)
@@ -211,10 +223,9 @@ async function deleted() {
 }
 async function saved() {
   showModal.value = false
-  notice.value = tarefaStore.tarefa.id
-    ? 'Tarefa atualizada com sucesso.'
-    : 'Tarefa criada com sucesso.'
-  notificacao.sucesso(notice.value)
+  mostrarAvisoTemporario(
+    tarefaStore.tarefa.id ? 'Tarefa atualizada com sucesso.' : 'Tarefa criada com sucesso.',
+  )
   await buscarTarefas()
 }
 
@@ -496,5 +507,33 @@ select {
   padding: 0.5rem;
   border-radius: 6px;
   background: transparent;
+}
+
+@media (max-width: 760px) {
+  .kanban-board {
+    height: auto;
+    min-height: 0;
+    padding-block: 1.5rem;
+  }
+  .section-header h2 { font-size: 1.25rem; }
+  .section-header > p { font-size: 0.875rem; }
+  .project-select {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 0.4rem;
+  }
+  .project-select select {
+    width: 100%;
+    min-height: 44px;
+    font-size: 16px;
+  }
+  .column-limit { align-items: stretch; }
+  .column-summary { font-size: 0.75rem; }
+  .add-column-button { width: 100%; min-height: 44px; }
+}
+
+@media (max-width: 480px) {
+  .project-select { flex-direction: column; align-items: stretch; }
+  .project-select select { width: 100%; min-width: 0; }
 }
 </style>

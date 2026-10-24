@@ -124,4 +124,19 @@ watch(() => props.projetoId, () => {
 .error p {
   margin-bottom: 0.75rem;
 }
+
+@media (max-width: 600px) {
+  .documents-board { padding-block: 1.5rem; }
+  .documents-header { align-items: stretch; gap: 0.75rem; }
+  .documents-header > div { width: 100%; }
+  .documents-header h2 { font-size: 1.25rem; }
+  .documents-header p { font-size: 0.875rem; }
+  .upload-button, .retry-button { width: 100%; min-height: 44px; }
+}
+
+@media (max-width: 480px) {
+  .documents-header { align-items: stretch; }
+  .documents-header > div { min-width: 0; }
+  .upload-button { width: 100%; }
+}
 </style>

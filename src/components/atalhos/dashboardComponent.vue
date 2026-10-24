@@ -444,18 +444,45 @@ button {
 }
 
 @media (max-width: 700px) {
-  .summary { gap: 12px; }
-  .summary span { font-size: 14px; }
+  .dashboard { margin: 24px auto 32px; }
+  h1 { margin-bottom: 20px; font-size: 1.25rem; }
+  h1 span { font-size: 0.875rem; }
+  .summary { gap: 8px; margin-bottom: 32px; }
+  .summary strong { font-size: 1.5rem; }
+  .summary span { font-size: 0.75rem; }
+  .progress-section { margin-bottom: 36px; }
+  .progress-heading { align-items: flex-start; gap: 0.5rem; }
+  .progress-heading h2 { font-size: 0.875rem; }
 
   .members {
     grid-template-columns: 1fr;
-    gap: 32px;
+    gap: 20px;
   }
-
-  .dashboard {
-    margin-top: 28px;
-  }
+  .member { gap: 12px; }
+  .avatar { width: 56px; height: 56px; }
+  .member-info h2 { font-size: 0.9375rem; }
+  .member-stats { gap: 4px 12px; font-size: 0.75rem; }
+  .member-stats > span + span { padding-left: 12px; }
 }
 .member-stats { display: flex; flex-wrap: wrap; gap: 8px 24px; }
 .member-stats > span + span { border-left: 1px solid #808080; padding-left: 24px; }
+
+@media (min-width: 701px) and (max-width: 1100px) {
+  .members { gap: 2rem; }
+  .member { gap: 1rem; }
+  .avatar { width: 64px; height: 64px; }
+}
+@media (max-width: 480px) {
+  .summary { grid-template-columns: minmax(0, 1fr); gap: 1.25rem; margin-bottom: 2rem; }
+  .summary > div { flex-direction: row; justify-content: space-between; gap: 1rem; text-align: left; }
+  .summary strong { font-size: 1.5rem; }
+  .member { align-items: flex-start; gap: 0.75rem; }
+  .avatar { width: 48px; height: 48px; }
+  .member-info h2 { flex-wrap: wrap; font-size: 1rem; }
+  .member-info p { overflow-wrap: anywhere; }
+  .member-stats { flex-direction: column; gap: 0.5rem; }
+  .member-stats > span + span { border-left: 0; padding-left: 0; }
+  .progress-heading { flex-wrap: wrap; gap: 0.5rem; }
+}
+
 </style>

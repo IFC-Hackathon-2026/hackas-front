@@ -254,4 +254,13 @@ textarea {
 .error {
   color: #b91c1c;
 }
+
+@media (max-width: 600px) {
+  .task-form > fieldset { gap: 1rem; }
+  select,
+  textarea,
+  .task-form :deep(.input-class) { min-height: 44px; font-size: 16px; }
+  textarea { min-height: 96px; }
+  .task-form :deep(.app-button) { min-height: 44px; font-size: 0.9375rem; }
+}
 </style>
