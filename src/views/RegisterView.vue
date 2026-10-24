@@ -22,17 +22,37 @@ const erroMessage = ref('')
 
 async function register() {
   if (loading.value) return
+
   erroMessage.value = ''
+
   if (user.password !== confirmPassword.value) {
     erroMessage.value = 'As senhas não coincidem.'
     return
   }
+
   loading.value = true
+
   try {
-    await userStore.register(user.email, user.password, user.name, user.foto)
-    await router.replace({ name: 'home' })
-  } catch {
-    erroMessage.value = 'Não foi possível fazer o cadastro. Tente novamente.'
+    console.log('1 - Iniciando cadastro')
+
+    const resultado = await userStore.register(user.email, user.password, user.name, user.foto)
+
+    console.log('2 - Cadastro concluído:', resultado)
+
+    console.log('3 - Redirecionando para verificação')
+
+    const falhaNavegacao = await router.replace({ name: 'verification' })
+
+    console.log('4 - Rota atual:', router.currentRoute.value.fullPath)
+    console.log('Falha na navegação:', falhaNavegacao)
+  } catch (error) {
+    console.error('ERRO:', error)
+    console.error('RESPOSTA DO BACKEND:', error.response?.data)
+
+    erroMessage.value =
+      error.response?.data?.detail ||
+      JSON.stringify(error.response?.data) ||
+      'Não foi possível fazer o cadastro.'
   } finally {
     loading.value = false
   }
