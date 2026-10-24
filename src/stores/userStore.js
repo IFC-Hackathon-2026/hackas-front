@@ -64,7 +64,7 @@ export const useUserStore = defineStore('user', () => {
     localStorage.setItem('refresh_token', data.refresh);
     accessToken.value = data.access;
     refreshToken.value = data.refresh;
-    await getMe();
+    return getMe();
   }
 
   async function register(email, password, name, foto) {

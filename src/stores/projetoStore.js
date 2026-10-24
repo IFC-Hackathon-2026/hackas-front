@@ -126,16 +126,6 @@ export const useProjetoStore = defineStore('projeto', () => {
     })
   }
 
-  function createParticipante(usuario, cargo = 'membro') {
-    return execute(async () => {
-      const { data } = await projetoService.createParticipante(
-        projetoAtual.value.id, usuario, cargo,
-      )
-      atualizarCache(data)
-      return data
-    })
-  }
-
   function deleteParticipante(participacaoId) {
     return execute(async () => {
       await projetoService.deleteParticipante(projetoAtual.value.id, participacaoId)
@@ -159,6 +149,6 @@ export const useProjetoStore = defineStore('projeto', () => {
     participantes, meuCargo, podeEditar, podeExcluir, podeGerenciarParticipantes,
     getProjetos, getMeusProjetos, getProjeto, selecionarProjeto,
     createProjeto, updateProjeto, deleteProjeto, updatePhoto,
-    createParticipante, updateParticipante, deleteParticipante, reset,
+    updateParticipante, deleteParticipante, reset,
   }
 })
