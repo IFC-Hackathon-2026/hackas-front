@@ -3,6 +3,7 @@ import { onMounted, ref } from 'vue'
 import { useDocumentoStore } from '@/stores/documentoStore'
 import { useTarefaStore } from '@/stores/tarefaStore'
 import { apiErrorMessage } from '@/utils/apiErrorMessage'
+import { notificacao } from '@/services/notificacaoService'
 import AppInput from '../forms/AppInput.vue'
 import AppButton from '../forms/AppButton.vue'
 
@@ -31,6 +32,7 @@ async function carregarTarefas() {
     tarefas.value = await tarefaStore.getTarefasParaSelecao(props.projetoId)
   } catch (error) {
     erroTarefas.value = apiErrorMessage(error, 'Não foi possível carregar as tarefas.')
+    notificacao.erro(erroTarefas.value)
   } finally {
     carregandoTarefas.value = false
   }
@@ -54,10 +56,12 @@ async function enviarDocumento() {
   if (enviando.value || carregandoTarefas.value || erroTarefas.value) return
   if (!tarefas.value.some((tarefa) => String(tarefa.id) === String(tarefaId.value))) {
     erro.value = 'Selecione uma tarefa deste projeto.'
+    notificacao.aviso(erro.value)
     return
   }
   if (!nome.value.trim() || nome.value.trim().length > 200) {
     erro.value = 'Informe um título de até 200 caracteres.'
+    notificacao.aviso(erro.value)
     return
   }
   enviando.value = true
@@ -80,6 +84,7 @@ async function enviarDocumento() {
     emit('salvo', documento)
   } catch (error) {
     erro.value = apiErrorMessage(error, error.message || 'Não foi possível enviar o documento.')
+    notificacao.erro(erro.value)
   } finally {
     enviando.value = false
   }

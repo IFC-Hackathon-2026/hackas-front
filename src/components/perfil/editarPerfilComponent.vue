@@ -83,6 +83,7 @@ async function saveProfile() {
 
   if (file.value && file.value.size > 5 * 1024 * 1024) {
     error.value = 'A imagem deve ter no máximo 5MB.'
+    notificacao.aviso(error.value)
     return
   }
 

@@ -5,6 +5,7 @@ import { usePedidoParticipacaoStore } from '@/stores/pedidoParticipacaoStore'
 import { useProjetoStore } from '@/stores/projetoStore'
 import { useUserStore } from '@/stores/userStore'
 import api from '@/api/config'
+import { notificacao } from '@/services/notificacaoService'
 
 const route = useRoute()
 const pedidoStore = usePedidoParticipacaoStore()
@@ -74,7 +75,10 @@ async function carregar() {
     } while (params)
     pedidos.value = lista
   } catch (error) {
-    if (atual === consulta) erro.value = error.response?.data?.detail || 'Não foi possível carregar as solicitações e os convites.'
+    if (atual === consulta) {
+      erro.value = error.response?.data?.detail || 'Não foi possível carregar as solicitações e os convites.'
+      notificacao.erro(erro.value)
+    }
   } finally {
     if (atual === consulta) carregando.value = false
   }
@@ -92,8 +96,12 @@ async function responder(pedido, aceitar) {
     if (projetoId !== equipeId.value) return
     await carregar()
     mensagem.value = aceitar ? 'Pedido aceito.' : 'Pedido recusado.'
+    notificacao.sucesso(mensagem.value)
   } catch (error) {
-    if (projetoId === equipeId.value) erro.value = error.response?.data?.detail || 'Não foi possível responder ao pedido.'
+    if (projetoId === equipeId.value) {
+      erro.value = error.response?.data?.detail || 'Não foi possível responder ao pedido.'
+      notificacao.erro(erro.value)
+    }
   } finally {
     respondendo.value = false
   }

@@ -5,6 +5,7 @@ import ParticipantesComponent from './participantesComponent.vue'
 import SolicitacoesComponent from './solicitacaoesComponent.vue'
 import novoConvite from './novoConvite.vue'
 import { useProjetoStore } from '@/stores/projetoStore'
+import { notificacao } from '@/services/notificacaoService'
 
 
 const projetoStore = useProjetoStore()
@@ -29,7 +30,10 @@ watch(equipeId, async (id, anterior, onCleanup) => {
   try {
     await projetoStore.selecionarProjeto(id)
   } catch {
-    if (ativa) erro.value = 'Não foi possível verificar sua permissão nesta equipe.'
+    if (ativa) {
+      erro.value = 'Não foi possível verificar sua permissão nesta equipe.'
+      notificacao.erro(erro.value)
+    }
   } finally {
     if (ativa) carregando.value = false
   }
@@ -47,9 +51,11 @@ async function excluirEquipe() {
   erroExclusao.value = ''
   try {
     await projetoStore.deleteProjeto(equipe.id)
+    notificacao.sucesso('Equipe excluída com sucesso.')
   } catch (error) {
     if (equipeId.value === String(equipe.id)) {
       erroExclusao.value = error.response?.data?.detail || 'Não foi possível excluir a equipe. Tente novamente.'
+      notificacao.erro(erroExclusao.value)
     }
     return
   } finally {

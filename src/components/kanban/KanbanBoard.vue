@@ -13,13 +13,17 @@ import TaskForm from '../tasks/TaskForm.vue'
 import AppButton from '../forms/AppButton.vue'
 import KanbanColumnForm from './KanbanColumnForm.vue'
 import { apiErrorMessage } from '@/utils/apiErrorMessage'
+import { notificacao } from '@/services/notificacaoService'
 import { MINIMO_COLUNAS, MAXIMO_COLUNAS } from '@/constants/kanban'
 
+const props = defineProps({
+  projetoId: { type: [String, Number], default: null },
+})
 const projetoStore = useProjetoStore()
 const tarefaStore = useTarefaStore()
 const statusStore = useStatusStore()
 const categoriaStore = useCategoriaStore()
-const selectedProject = ref(projetoStore.projetoAtual?.id ?? '')
+const selectedProject = ref(props.projetoId ?? projetoStore.projetoAtual?.id ?? '')
 const showModal = ref(false)
 const openingTask = ref(false)
 const arrastandoTarefa = ref(false)
@@ -54,8 +58,10 @@ async function buscarTarefas() {
   try {
     await tarefaStore.getTarefasKanban(selectedProject.value, statusStore.statusesOrdenados)
   } catch {
-    if (versao === versaoBusca)
+    if (versao === versaoBusca) {
       erroBusca.value = 'Não foi possível filtrar as tarefas. Tente novamente.'
+      notificacao.erro(erroBusca.value)
+    }
   } finally {
     if (versao === versaoBusca) buscando.value = false
   }
@@ -150,7 +156,10 @@ async function loadProject() {
     if (current !== request) return
     await tarefaStore.getTarefasKanban(selectedProject.value, statusStore.statusesOrdenados)
   } catch {
-    if (current === request) error.value = 'Não foi possível carregar o projeto.'
+    if (current === request) {
+      error.value = 'Não foi possível carregar o projeto.'
+      notificacao.erro(error.value)
+    }
   } finally {
     if (current === request) loading.value = false
   }
@@ -168,11 +177,13 @@ async function loadProjects() {
     if (selectedProject.value) await loadProject()
   } catch {
     error.value = 'Não foi possível carregar os projetos.'
+    notificacao.erro(error.value)
   } finally {
     loading.value = false
   }
 }
-onMounted(loadProjects)
+onMounted(() => props.projetoId != null ? loadProject() : loadProjects())
+onUnmounted(() => { request++ })
 function newTask(statusId) {
   if (movendoTarefa.value || arrastandoTarefa.value) return
   if (loading.value || openingTask.value || tarefaStore.loading || !selectedProject.value) return
@@ -196,7 +207,10 @@ async function openTask(taskId) {
     }
     showModal.value = true
   } catch {
-    if (current === request) taskError.value = 'Não foi possível abrir a tarefa. Tente novamente.'
+    if (current === request) {
+      taskError.value = 'Não foi possível abrir a tarefa. Tente novamente.'
+      notificacao.erro(taskError.value)
+    }
   } finally {
     openingTask.value = false
   }
@@ -204,13 +218,14 @@ async function openTask(taskId) {
 async function deleted() {
   showModal.value = false
   notice.value = 'Tarefa excluída com sucesso.'
+  notificacao.sucesso(notice.value)
   await buscarTarefas()
 }
 async function saved() {
   showModal.value = false
-  mostrarAvisoTemporario(tarefaStore.tarefa.id
-    ? 'Tarefa atualizada com sucesso.'
-    : 'Tarefa criada com sucesso.')
+  mostrarAvisoTemporario(
+    tarefaStore.tarefa.id ? 'Tarefa atualizada com sucesso.' : 'Tarefa criada com sucesso.',
+  )
   await buscarTarefas()
 }
 
@@ -235,6 +250,7 @@ async function moverTarefa({ tarefaId, statusId }) {
     await tarefaStore.updateTarefa(tarefaId, projetoId, { status: statusId })
     if (atual !== request) return
     notice.value = `Tarefa movida para ${coluna.nome}.`
+    notificacao.sucesso(notice.value)
     await buscarTarefas()
   } catch (erro) {
     if (atual !== request) return
@@ -242,6 +258,7 @@ async function moverTarefa({ tarefaId, statusId }) {
       item.id === tarefaId ? tarefaAnterior : item,
     )
     taskError.value = apiErrorMessage(erro, 'Não foi possível mover a tarefa. Tente novamente.')
+    notificacao.erro(taskError.value)
   } finally {
     movendoTarefa.value = false
   }
@@ -277,8 +294,10 @@ async function atualizarColunas(projetoId) {
     if (atual !== request) return
     await buscarTarefas()
   } catch {
-    if (atual === request)
+    if (atual === request) {
       erroColuna.value = 'Não foi possível atualizar o quadro. Tente novamente.'
+      notificacao.erro(erroColuna.value)
+    }
   }
 }
 
@@ -287,6 +306,7 @@ async function colunaSalva(projetoId) {
   notice.value = colunaSelecionada.value
     ? 'Coluna atualizada com sucesso.'
     : 'Coluna criada com sucesso.'
+  notificacao.sucesso(notice.value)
   mostrarModalColuna.value = false
   erroColuna.value = ''
   await atualizarColunas(projetoId)
@@ -303,13 +323,16 @@ async function excluirColuna() {
     if (atual !== request) return
     colunaExcluir.value = null
     notice.value = 'Coluna excluída com sucesso.'
+    notificacao.sucesso(notice.value)
     await atualizarColunas(projetoId)
   } catch (error) {
-    if (atual === request)
+    if (atual === request) {
       erroColuna.value = apiErrorMessage(
         error,
         error.message || 'Não foi possível excluir a coluna.',
       )
+      notificacao.erro(erroColuna.value)
+    }
   } finally {
     excluindoColuna.value = false
   }
@@ -321,7 +344,7 @@ async function excluirColuna() {
     <div class="section-header">
       <h2>Kanban</h2>
       <p>Organize tarefas, defina prioridades e acompanhe o progresso do projeto.</p>
-      <label class="project-select"
+      <label v-if="props.projetoId == null" class="project-select"
         >Projeto
         <select
           v-model="selectedProject"

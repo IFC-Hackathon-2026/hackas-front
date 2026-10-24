@@ -14,6 +14,7 @@ const router = createRouter({
     },
     {
       path: '/',
+      alias: '/home',
       name: 'home',
       component: HomeView,
       meta: { guestOnly: true },
@@ -30,6 +31,16 @@ const router = createRouter({
       component: () => import('../views/detailsEventsView.vue'),
       meta: { requiresAuth: true },
       children: [
+        {
+          path: 'kanban',
+          name: 'kanban',
+          component: () => import('../components/atalhos/kanbanComponent.vue'),
+        },
+        {
+          path: 'documentos',
+          name: 'documentos',
+          component: () => import('../components/atalhos/documentosComponent.vue'),
+        },
         {
           path: 'dashboard',
           name: 'dashboard',
@@ -57,6 +68,16 @@ const router = createRouter({
       name: 'cadastro',
       component: () => import('../views/RegisterView.vue'),
       meta: { guestOnly: true },
+    },
+    {
+      path: '/verification',
+      name: 'verification',
+      component: () => import('../components/login/verificationComponent.vue'),
+    },
+    {
+      path: '/aboutus',
+      name: 'aboutus',
+      component: () => import('../views/AboutUsView.vue'),
     },
     {
       path: '/dashboard/:id',
@@ -110,5 +131,6 @@ router.beforeEach((to) => {
     return obterDestino(to.query.redirect)
   }
 })
+
 
 export default router

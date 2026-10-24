@@ -1,15 +1,18 @@
 
 <script setup>
 import { reactive, ref, onBeforeUnmount } from 'vue'
+import { useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/userStore'
+import { notificacao } from '@/services/notificacaoService'
 import appArrow from '../layout/appArrow.vue'
 import AppInput from '@/components/forms/AppInput.vue'
 import AppButton from '@/components/forms/AppButton.vue'
 import StepIndicator from '../layout/StepIndicator.vue'
 
 const userStore = useUserStore()
+const router = useRouter()
 
-const emit = defineEmits(['ir-para-login', 'cadastro-sucesso'])
+const emit = defineEmits(['ir-para-login'])
 
 const user = reactive({
   email: '',
@@ -69,6 +72,7 @@ async function register() {
 
   if (user.password !== confirmPassword.value) {
     erroMessage.value = 'As senhas não coincidem.'
+    notificacao.aviso(erroMessage.value)
     return
   }
 
@@ -76,9 +80,12 @@ async function register() {
 
   try {
     await userStore.register(user.email, user.password, user.name, user.foto)
-    emit('cadastro-sucesso')
+    notificacao.sucesso('Cadastro realizado com sucesso.')
+
+    await router.replace({ name: 'verification' })
   } catch {
     erroMessage.value = 'Não foi possível fazer o cadastro. Tente novamente.'
+    notificacao.erro(erroMessage.value)
   } finally {
     loading.value = false
   }

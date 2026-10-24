@@ -6,6 +6,7 @@ import AppButton from '@/components/forms/AppButton.vue'
 import { PROJECT_CATEGORY_LABELS } from '@/constants/projectCategories'
 import { useProjetoStore } from '@/stores/projetoStore'
 import { useUserStore } from '@/stores/userStore'
+import { notificacao } from '@/services/notificacaoService'
 
 const router = useRouter()
 const projetoStore = useProjetoStore()
@@ -45,7 +46,9 @@ function voltarAoTopo() {
   })
 }
 
-onMounted(() => projetoStore.getProjetosDestaque().catch(() => {}))
+onMounted(() => projetoStore.getProjetosDestaque().catch(() => {
+  notificacao.erro('Não foi possível carregar os destaques.')
+}))
 </script>
 
 <template>

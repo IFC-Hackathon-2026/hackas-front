@@ -2,6 +2,7 @@
 import { ref, watch } from 'vue'
 import { useDocumentoStore } from '@/stores/documentoStore'
 import { apiErrorMessage } from '@/utils/apiErrorMessage'
+import { notificacao } from '@/services/notificacaoService'
 import AppButton from '../forms/AppButton.vue'
 import AppModal from '../modais/AppModal.vue'
 import DocumentCard from './DocumentCard.vue'
@@ -27,7 +28,10 @@ async function carregarDocumentos() {
   try {
     await documentoStore.getDocumentos(props.projetoId, { page_size: 100 }, true)
   } catch (error) {
-    if (atual === versao) erro.value = apiErrorMessage(error, 'Não foi possível carregar os documentos.')
+    if (atual === versao) {
+      erro.value = apiErrorMessage(error, 'Não foi possível carregar os documentos.')
+      notificacao.erro(erro.value)
+    }
   } finally {
     if (atual === versao) carregando.value = false
   }
@@ -38,6 +42,7 @@ async function documentoSalvo(documento) {
   if (String(projetoId) !== String(props.projetoId)) return
   mostrarModal.value = false
   mensagem.value = 'Documento adicionado com sucesso.'
+  notificacao.sucesso(mensagem.value)
   await carregarDocumentos()
 }
 

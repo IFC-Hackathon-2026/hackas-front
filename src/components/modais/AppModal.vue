@@ -1,5 +1,6 @@
 <script setup>
-import { onMounted, ref, watch } from 'vue'
+import { onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { definirContainerNotificacoes } from '@/services/notificacaoService'
 
 const props = defineProps({
   title: {
@@ -17,11 +18,23 @@ function fechar() {
   if (!props.bloqueado) visible.value = false
 }
 
+function restaurarNotificacoes() {
+  const modaisAbertos = [...document.querySelectorAll('dialog[open]')]
+    .filter((modal) => modal !== dialog.value)
+  definirContainerNotificacoes(modaisAbertos.at(-1) ?? document.body)
+}
+
+function aoFechar() {
+  visible.value = false
+  restaurarNotificacoes()
+}
+
 function syncVisibility() {
   if (!dialog.value) return
 
   if (visible.value && !dialog.value.open) {
     dialog.value.showModal()
+    definirContainerNotificacoes(dialog.value)
   } else if (!visible.value && dialog.value.open) {
     dialog.value.close()
   }
@@ -29,6 +42,7 @@ function syncVisibility() {
 
 onMounted(syncVisibility)
 watch(visible, syncVisibility)
+onBeforeUnmount(restaurarNotificacoes)
 </script>
 
 <template>
@@ -39,7 +53,7 @@ watch(visible, syncVisibility)
       :class="{ 'app-modal--wide': amplo }"
       :aria-label="props.title"
       @cancel.prevent="fechar"
-      @close="visible = false"
+      @close="aoFechar"
     >
       <header class="modal-header">
         <h2>{{ props.title }}</h2>

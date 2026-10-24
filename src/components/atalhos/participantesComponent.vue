@@ -4,6 +4,7 @@ import { useRoute } from 'vue-router'
 import api from '@/api/config'
 import UserService from '@/services/userService'
 import { useProjetoStore } from '@/stores/projetoStore'
+import { notificacao } from '@/services/notificacaoService'
 
 const projetoStore = useProjetoStore()
 const userService = new UserService()
@@ -76,9 +77,11 @@ async function gerenciarParticipante(participacao, remover = false) {
     if (equipeId.value !== idEquipeDaAcao) return
     await carregarParticipantes()
     actionMessage.value = remover ? 'Participante removido da equipe.' : 'Cargo atualizado.'
+    notificacao.sucesso(actionMessage.value)
   } catch (requestError) {
     if (equipeId.value !== idEquipeDaAcao) return
     error.value = requestError.response?.data?.detail || requestError.message || 'Não foi possível concluir a alteração.'
+    notificacao.erro(error.value)
   } finally {
     actionPending.value = false
   }
@@ -141,9 +144,13 @@ async function carregarParticipantes() {
     emit('equipe-carregada', equipe.value)
     if (equipe.value.participacoes.some(({ usuario }) => !usuario.email)) {
       memberWarning.value = 'A API não disponibilizou o e-mail de alguns participantes.'
+      notificacao.aviso(memberWarning.value)
     }
   } catch {
-    if (currentRequest === requestId) error.value = 'Não foi possível carregar os participantes.'
+    if (currentRequest === requestId) {
+      error.value = 'Não foi possível carregar os participantes.'
+      notificacao.erro(error.value)
+    }
   } finally {
     if (currentRequest === requestId) loadingMembers.value = false
   }
