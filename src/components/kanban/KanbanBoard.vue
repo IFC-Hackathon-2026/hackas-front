@@ -3,6 +3,7 @@ import { computed, onMounted, ref } from 'vue'
 import { useProjetoStore } from '@/stores/projetoStore'
 import { useTarefaStore } from '@/stores/tarefaStore'
 import { useStatusStore } from '@/stores/statusStore'
+import { useCategoriaStore } from '@/stores/categoriaStore'
 import KanbanColumn from './KanbanColumn.vue'
 import AppModal from '../modais/AppModal.vue'
 import TaskForm from '../tasks/TaskForm.vue'
@@ -10,6 +11,7 @@ import TaskForm from '../tasks/TaskForm.vue'
 const projetoStore = useProjetoStore()
 const tarefaStore = useTarefaStore()
 const statusStore = useStatusStore()
+const categoriaStore = useCategoriaStore()
 const selectedProject = ref(projetoStore.projetoAtual?.id ?? '')
 const showModal = ref(false)
 const loading = ref(false)
@@ -29,6 +31,12 @@ const tasks = computed(() =>
     title: task.titulo,
     startDate: date(task.criado_em),
     endDate: date(task.prazo),
+    prioridade: task.prioridade,
+    categorias: (task.categoria ?? [])
+      .map((categoria) => typeof categoria === 'object'
+        ? categoria
+        : categoriaStore.categorias.find((item) => item.id === categoria))
+      .filter(Boolean),
   })),
 )
 const kabanCategories = computed(() =>
@@ -54,6 +62,7 @@ async function loadProject() {
     await Promise.all([
       tarefaStore.getTarefas(selectedProject.value, { page_size: 100 }, true),
       statusStore.getStatuses(selectedProject.value),
+      categoriaStore.getCategorias(selectedProject.value),
     ])
   } catch {
     if (current === request) error.value = 'Não foi possível carregar o projeto.'
