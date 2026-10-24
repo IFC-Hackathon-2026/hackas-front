@@ -1,36 +1,124 @@
-
 <script setup>
-import { computed, ref } from 'vue';
-import KanbanColumn from './KanbanColumn.vue';
+import { computed, onMounted, ref } from 'vue'
+import { useProjetoStore } from '@/stores/projetoStore'
+import { useTarefaStore } from '@/stores/tarefaStore'
+import { useStatusStore } from '@/stores/statusStore'
+import KanbanColumn from './KanbanColumn.vue'
+import AppModal from '../modais/AppModal.vue'
+import TaskForm from '../tasks/TaskForm.vue'
 
-const tasks = ref([
-  { id: 0, categoryId: 0, title: 'Pesquisar temas do debate', startDate: '23/10', endDate: '25/10' },
-  { id: 1, categoryId: 0, title: 'Definir participantes', startDate: '23/10', endDate: '26/10' },
-  { id: 2, categoryId: 1, title: 'Preparar mesas de cooperação', startDate: '22/10', endDate: '27/10' },
-  { id: 3, categoryId: 2, title: 'Criar o projeto', startDate: '21/10', endDate: '22/10' },
-]);
-
-const categories = ref([
-  { id: 0, title: 'A fazer', styleColor: '#E53D00' },
-  { id: 1, title: 'Em andamento', styleColor: '#FFBE33' },
-  { id: 2, title: 'Concluído', styleColor: '#429E5E' },
-]);
-
-const kabanCategories = computed(() =>
-  categories.value.map((category) => ({
-    ...category,
-    countTask: tasks.value.filter((task) => task.categoryId === category.id).length,
+const projetoStore = useProjetoStore()
+const tarefaStore = useTarefaStore()
+const statusStore = useStatusStore()
+const selectedProject = ref(projetoStore.projetoAtual?.id ?? '')
+const showModal = ref(false)
+const loading = ref(false)
+const error = ref('')
+const notice = ref('')
+let request = 0
+const date = (value) =>
+  value
+    ? /^\d{4}-\d{2}-\d{2}$/.test(value)
+      ? `${value.slice(8, 10)}/${value.slice(5, 7)}`
+      : new Date(value).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })
+    : '—'
+const tasks = computed(() =>
+  tarefaStore.tarefas.map((task) => ({
+    id: task.id,
+    categoryId: task.status?.id ?? task.status,
+    title: task.titulo,
+    startDate: date(task.criado_em),
+    endDate: date(task.prazo),
   })),
-);
+)
+const kabanCategories = computed(() =>
+  statusStore.statusesOrdenados.map((status) => ({
+    id: status.id,
+    title: status.nome,
+    styleColor: status.cor,
+    countTask: tasks.value.filter((task) => task.categoryId === status.id).length,
+  })),
+)
+async function loadProject() {
+  const current = ++request
+  showModal.value = false
+  error.value = ''
+  notice.value = ''
+  tarefaStore.reset()
+  statusStore.reset()
+  if (!selectedProject.value) return
+  loading.value = true
+  try {
+    await projetoStore.selecionarProjeto(selectedProject.value)
+    if (current !== request) return
+    await Promise.all([
+      tarefaStore.getTarefas(selectedProject.value, { page_size: 100 }, true),
+      statusStore.getStatuses(selectedProject.value),
+    ])
+  } catch {
+    if (current === request) error.value = 'Não foi possível carregar o projeto.'
+  } finally {
+    if (current === request) loading.value = false
+  }
+}
+async function loadProjects() {
+  loading.value = true
+  try {
+    const projects = []
+    let page = 1
+    do {
+      projects.push(...(await projetoStore.getMeusProjetos({ page, page_size: 100 })))
+      page++
+    } while (projetoStore.next)
+    projetoStore.projetos = projects
+    if (selectedProject.value) await loadProject()
+  } catch {
+    error.value = 'Não foi possível carregar os projetos.'
+  } finally {
+    loading.value = false
+  }
+}
+onMounted(loadProjects)
+function openTask(statusId) {
+  if (loading.value || tarefaStore.loading || !selectedProject.value) return
+  tarefaStore.resetTarefa(Number(selectedProject.value), statusId)
+  showModal.value = true
+}
+function saved() {
+  showModal.value = false
+  notice.value = 'Tarefa criada com sucesso.'
+}
 </script>
 
 <template>
   <section class="kanban-board">
     <div class="section-header">
-      <h2>Kaban</h2>
+      <h2>Kanban</h2>
       <p>Organize tarefas, defina prioridades e acompanhe o progresso do projeto.</p>
+      <label class="project-select"
+        >Projeto
+        <select v-model="selectedProject" :disabled="loading || showModal" @change="loadProject">
+          <option value="">Selecione um projeto</option>
+          <option v-for="project in projetoStore.projetos" :key="project.id" :value="project.id">
+            {{ project.nome }}
+          </option>
+        </select>
+      </label>
+      <p v-if="notice" role="status">{{ notice }}</p>
     </div>
-    <KanbanColumn :kaban-categories="kabanCategories" :tasks="tasks" />
+    <p v-if="loading" role="status">Carregando quadro…</p>
+    <div v-else-if="error" role="alert">
+      <p>{{ error }}</p>
+      <button type="button" @click="selectedProject ? loadProject() : loadProjects()">
+        Tentar novamente
+      </button>
+    </div>
+    <p v-else-if="!selectedProject">Selecione um projeto para ver as tarefas.</p>
+    <p v-else-if="!kabanCategories.length">Este projeto ainda não possui status cadastrados.</p>
+    <KanbanColumn v-else :kaban-categories="kabanCategories" :tasks="tasks" @add-task="openTask" />
+    <AppModal v-model:visible="showModal" title="Nova tarefa">
+      <TaskForm v-if="showModal" @saved="saved" />
+    </AppModal>
   </section>
 </template>
 
@@ -43,9 +131,20 @@ const kabanCategories = computed(() =>
   height: 100dvh;
   padding-block: 2rem;
 }
-
 .section-header {
   margin-bottom: 1.2rem;
   flex-shrink: 0;
+}
+.project-select {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+select {
+  max-width: 100%;
+  padding: 0.5rem;
+  border-radius: 6px;
+  background: transparent;
 }
 </style>
