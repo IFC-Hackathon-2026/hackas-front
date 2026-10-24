@@ -24,6 +24,24 @@ const router = createRouter({
       meta: { requiresAuth: true },
     },
     {
+      path: '/eventos/:id',
+      name: 'detailsEventsView',
+      component: () => import('../views/detailsEventsView.vue'),
+      meta: { requiresAuth: true },
+      children: [
+        {
+          path: 'dashboard',
+          name: 'dashboard',
+          component: () => import('../components/atalhos/dashboardComponent.vue'),
+        },
+        {
+          path: 'config',
+          name: 'config',
+          component: () => import('../components/atalhos/princiapalconfigComponent.vue'),
+        },
+      ],
+    },
+    {
       path: '/login',
       name: 'login',
       component: () => import('../views/LoginView.vue'),
@@ -41,12 +59,14 @@ const router = createRouter({
     },
     {
       path: '/dashboard/:id',
-      name: 'dashboard',
-      meta: { requiresAuth: true },
-      component: () => import('../components/layout/atalhosEventoComponent.vue'),
+      redirect: (to) => ({ name: 'dashboard', params: { id: to.params.id } }),
     },
     {
       path: '/config/:id?',
+      redirect: (to) => {
+        const id = to.params.id || to.query.id
+        return id ? { name: 'config', params: { id } } : { name: 'eventos' }
+     },
       name: 'config',
       meta: { requiresAuth: true },
       component: () => import('../components/atalhos/princiapalconfigComponent.vue'),
