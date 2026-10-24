@@ -1,9 +1,41 @@
 <script setup>
 import { onMounted, onUnmounted, ref } from 'vue'
+import Draggable from 'vuedraggable'
 import AppButton from '../forms/AppButton.vue'
 import TaskCard from '../tasks/TaskCard.vue'
-const emit = defineEmits(['add-task', 'open-task', 'edit-column', 'delete-column'])
+const emit = defineEmits([
+  'add-task', 'open-task', 'edit-column', 'delete-column', 'move-task', 'drag-state',
+])
 const menuAberto = ref(null)
+const arrastando = ref(false)
+const colunaDestino = ref(null)
+
+function iniciarArraste() {
+  menuAberto.value = null
+  arrastando.value = true
+  emit('drag-state', true)
+}
+
+function terminarArraste() {
+  arrastando.value = false
+  colunaDestino.value = null
+  emit('drag-state', false)
+}
+
+function indicarDestino(evento) {
+  if (props.arrasteDesabilitado) return false
+  colunaDestino.value = Number(evento.to.dataset.colunaId)
+  return true
+}
+
+function moverTarefa(evento, colunaId) {
+  if (!evento.added || props.arrasteDesabilitado) return
+  emit('move-task', { tarefaId: evento.added.element.id, statusId: colunaId })
+}
+
+function abrirTarefa(id) {
+  if (!arrastando.value && !props.desabilitado) emit('open-task', id)
+}
 
 function escolherOpcao(acao, colunaId) {
   menuAberto.value = null
@@ -29,6 +61,7 @@ const props = defineProps({
   },
   podeExcluir: Boolean,
   desabilitado: Boolean,
+  arrasteDesabilitado: Boolean,
 })
 </script>
 
@@ -42,6 +75,7 @@ const props = defineProps({
       v-for="c in props.kabanCategories"
       :key="c.id"
       class="kanban-column"
+      :class="{ 'column-drop-target': colunaDestino === c.id }"
       :style="{ borderColor: c.styleColor }"
     >
       <div class="column-header">
@@ -67,7 +101,11 @@ const props = defineProps({
             role="group"
             :aria-label="'Ações da coluna ' + c.title"
           >
-            <button type="button" @click="escolherOpcao('edit-column', c.id)">Editar</button>
+            <button
+              type="button"
+              :disabled="props.desabilitado"
+              @click="escolherOpcao('edit-column', c.id)"
+            >Editar</button>
             <button
               type="button"
               class="delete-option"
@@ -82,6 +120,7 @@ const props = defineProps({
             type="button"
             class="add-task-icon"
             aria-label="Adicionar tarefa"
+            :disabled="props.desabilitado"
             @click="emit('add-task', c.id)"
           >
             <span class="mdi mdi-plus" aria-hidden="true" />
@@ -89,27 +128,51 @@ const props = defineProps({
         </div>
       </div>
 
-      <div class="column-tasks">
-        <TaskCard
-          v-for="t in props.tasks.filter((task) => task.categoryId === c.id)"
-          :key="t.id"
-          role="button"
-          tabindex="0"
-          :aria-label="'Editar tarefa: ' + t.title"
-          @click="emit('open-task', t.id)"
-          @keydown.enter.prevent="emit('open-task', t.id)"
-          @keydown.space.prevent="emit('open-task', t.id)"
-          :title="t.title"
-          :end-date="t.endDate"
-          :start-date="t.startDate"
-          :categorias="t.categorias"
-          :prioridade="t.prioridade"
-          :atrasada="t.atrasada"
-          :concluido-em="t.concluidoEm"
-        />
-      </div>
+      <Draggable
+        :model-value="props.tasks.filter((task) => task.categoryId === c.id)"
+        item-key="id"
+        group="kanban-tarefas"
+        handle=".task-drag-handle"
+        :sort="false"
+        :disabled="props.arrasteDesabilitado"
+        :animation="180"
+        :delay="150"
+        :delay-on-touch-only="true"
+        :touch-start-threshold="5"
+        :scroll-sensitivity="60"
+        :scroll-speed="12"
+        ghost-class="task-ghost"
+        chosen-class="task-chosen"
+        class="column-tasks"
+        :data-coluna-id="c.id"
+        :move="indicarDestino"
+        @start="iniciarArraste"
+        @end="terminarArraste"
+        @change="moverTarefa($event, c.id)"
+      >
+        <template #item="{ element: t }">
+          <TaskCard
+            role="button"
+            tabindex="0"
+            :aria-label="'Editar tarefa: ' + t.title"
+            @click="abrirTarefa(t.id)"
+            @keydown.enter.prevent="abrirTarefa(t.id)"
+            @keydown.space.prevent="abrirTarefa(t.id)"
+            :title="t.title"
+            :end-date="t.endDate"
+            :start-date="t.startDate"
+            :categorias="t.categorias"
+            :prioridade="t.prioridade"
+            :atrasada="t.atrasada"
+            :concluido-em="t.concluidoEm"
+          />
+        </template>
+        <template #footer>
+          <p v-if="!c.countTask" class="empty-column">Solte uma tarefa aqui</p>
+        </template>
+      </Draggable>
 
-      <AppButton class="add-task-button" @click="emit('add-task', c.id)"
+      <AppButton class="add-task-button" :disabled="props.desabilitado" @click="emit('add-task', c.id)"
         >Adicionar Tarefa <span class="mdi mdi-plus"
       /></AppButton>
     </li>
@@ -161,6 +224,30 @@ const props = defineProps({
   border: 2px solid;
   border-radius: 10px;
   padding: 1rem;
+}
+
+.column-drop-target {
+  background: #eaf0f8;
+  outline: 2px dashed var(--primaria);
+  outline-offset: -7px;
+}
+
+.empty-column {
+  padding: 1rem;
+  color: #777;
+  font-size: 0.85rem;
+  text-align: center;
+  pointer-events: none;
+}
+
+:deep(.task-ghost) {
+  opacity: 0.35;
+}
+
+:deep(.task-chosen .task-card) {
+  background: #fff;
+  box-shadow: 0 4px 16px rgb(0 18 40 / 20%);
+  transform: none;
 }
 
 @media (max-width: 760px) {
