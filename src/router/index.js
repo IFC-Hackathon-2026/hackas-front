@@ -16,7 +16,6 @@ const router = createRouter({
       path: '/',
       name: 'home',
       component: HomeView,
-      meta: { guestOnly: true },
     },
     {
       path: '/eventos',
@@ -50,13 +49,14 @@ const router = createRouter({
       path: '/config/:id?',
       name: 'config',
       meta: { requiresAuth: true },
-      component: () => import('../components/atalhos/princiapalconfigComponent.vue')
+      component: () => import('../components/atalhos/princiapalconfigComponent.vue'),
     },
+    {
       path: '/perfil',
       name: 'perfil',
       component: () => import('../views/PerfilView.vue'),
       meta: { requiresAuth: true },
-    }
+    },
   ],
 })
 

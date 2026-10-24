@@ -42,7 +42,7 @@ async function carregarProjetos() {
   await projetoStore.getProjetos({
     search: buscaProjeto.value.trim() || undefined,
     categorias: categoriasSelecionadas.value.length
-      ? categoriasSelecionadas.value.join(',')
+      ? categoriasSelecionadas.value
       : undefined,
     page_size: 100,
   })
