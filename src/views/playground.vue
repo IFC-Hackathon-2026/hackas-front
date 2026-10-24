@@ -1,5 +1,6 @@
 <script setup>
 import { computed, reactive, ref } from 'vue'
+import { prioridades } from '@/constants/prioridades'
 import { useUserStore } from '@/stores/userStore'
 import { useProjetoStore } from '@/stores/projetoStore'
 import { useStatusStore } from '@/stores/statusStore'
@@ -8,6 +9,7 @@ import { PROJECT_CATEGORIES } from '@/constants/projectCategories'
 import { useTarefaStore } from '@/stores/tarefaStore'
 import { useDocumentoStore } from '@/stores/documentoStore'
 import { usePedidoParticipacaoStore } from '@/stores/pedidoParticipacaoStore'
+import KanbanBoard from '@/components/kanban/KanbanBoard.vue'
 
 defineOptions({ name: 'ApiPlayground' })
 
@@ -30,6 +32,7 @@ const tarefaForm = reactive({
 const statusSelecionadoId = ref('')
 const categoriaSelecionadaId = ref('')
 const tarefaSelecionadaId = ref('')
+const somenteTarefasAtrasadas = ref(false)
 const documentoSelecionadoId = ref('')
 const documentoArquivo = ref(null)
 const documentoBusca = ref('')
@@ -46,13 +49,26 @@ async function carregarDadosProjeto() {
     () => Promise.all([
       statusStore.getStatuses(id),
       categoriaStore.getCategorias(id),
-      tarefaStore.getTarefas(id, { page_size: 100 }),
+      tarefaStore.getTarefas(id, {
+        page_size: 100,
+        atrasadas: somenteTarefasAtrasadas.value ? 'true' : undefined,
+      }),
       tarefaStore.getTarefasAtrasadas(id, { page_size: 100 }),
       documentoStore.getDocumentos(id, { page_size: 100 }),
     ]),
     'Status, categorias, tarefas e documentos carregados.',
   )
   if (resultado && !tarefaForm.status) tarefaForm.status = statusStore.statusInicial?.id ?? ''
+}
+
+async function listarTarefas() {
+  await run(
+    () => tarefaStore.getTarefas(projetoSelecionadoId.value, {
+      page_size: 100,
+      atrasadas: somenteTarefasAtrasadas.value ? 'true' : undefined,
+    }),
+    somenteTarefasAtrasadas.value ? 'Tarefas atrasadas carregadas.' : 'Todas as tarefas carregadas.',
+  )
 }
 
 async function salvarStatus(criar) {
@@ -119,7 +135,13 @@ async function salvarTarefa(criar) {
       : tarefaStore.updateTarefa(tarefaSelecionadaId.value, projetoId, tarefaPayload()),
     criar ? 'Tarefa criada.' : 'Tarefa atualizada.',
   )
-  if (tarefa) selecionarTarefa(tarefa)
+  if (tarefa) {
+    selecionarTarefa(tarefa)
+    await Promise.all([
+      projetoStore.getProjeto(projetoId),
+      userStore.getMe(),
+    ])
+  }
 }
 
 async function selecionarTarefa(tarefa) {
@@ -154,10 +176,16 @@ function nomeSituacao(situacao) {
 }
 
 async function excluirTarefa() {
-  await run(
+  const excluida = await run(
     () => tarefaStore.deleteTarefa(tarefaSelecionadaId.value, projetoSelecionadoId.value),
     'Tarefa excluída.',
   )
+  if (excluida !== null) {
+    await Promise.all([
+      projetoStore.getProjeto(projetoSelecionadoId.value),
+      userStore.getMe(),
+    ])
+  }
   tarefaSelecionadaId.value = ''
 }
 
@@ -492,6 +520,7 @@ function logout() {
 
 <template>
   <main class="playground">
+    <KanbanBoard />
     <header class="page-header">
       <div>
         <p class="eyebrow">Farol Flow</p>
@@ -592,6 +621,12 @@ function logout() {
             <small>ID: {{ userStore.user.id }}</small>
           </div>
         </div>
+        <p v-if="userStore.user">
+          Tarefas do perfil — progresso: {{ userStore.resumoTarefas.progresso }}% ·
+          concluídas: {{ userStore.resumoTarefas.concluidas }} ·
+          não concluídas: {{ userStore.resumoTarefas.nao_concluidas }} ·
+          atrasadas: {{ userStore.resumoTarefas.atrasadas }}
+        </p>
         <p v-else>Nenhum usuário foi carregado.</p>
         <pre>{{ JSON.stringify(userStore.user, null, 2) }}</pre>
       </section>
@@ -719,6 +754,21 @@ function logout() {
             <p>{{ projetoStore.projetoAtual.nome }} · ID {{ projetoStore.projetoAtual.id }}</p>
             <p>Cargo: {{ projetoStore.meuCargo || 'Sem participação' }}</p>
             <p>Pode editar: {{ projetoStore.podeEditar ? 'Sim' : 'Não' }} · Pode excluir: {{ projetoStore.podeExcluir ? 'Sim' : 'Não' }}</p>
+            <template v-if="projetoStore.projetoAtual.resumo_tarefas">
+              <h4 class="spaced">Resumo do dashboard</h4>
+              <p>
+                Progresso: {{ projetoStore.resumoTarefas.progresso }}% ·
+                Atrasadas: {{ projetoStore.resumoTarefas.atrasadas }} ·
+                Concluídas: {{ projetoStore.resumoTarefas.concluidas }} ·
+                Não concluídas: {{ projetoStore.resumoTarefas.nao_concluidas }}
+              </p>
+              <ul>
+                <li v-for="item in projetoStore.desempenhoParticipantes" :key="item.usuario.id">
+                  {{ item.usuario.name || item.usuario.email }} —
+                  atrasadas: {{ item.atrasadas }} · concluídas: {{ item.concluidas }}
+                </li>
+              </ul>
+            </template>
             <img v-if="projetoStore.projetoAtual.foto?.url" class="project-photo" :src="resolveMediaUrl(projetoStore.projetoAtual.foto.url)" alt="Foto do projeto" />
             <div class="photo-update">
               <label>Foto<input type="file" accept="image/png,image/jpeg" @change="projetoPhoto = $event.target.files?.[0] ?? null" /></label>
@@ -778,6 +828,7 @@ function logout() {
                 <option value="pendente">Pendente</option>
                 <option value="aceito">Aceito</option>
                 <option value="recusado">Recusado</option>
+                <option value="removido">Removido da equipe</option>
               </select>
             </label>
             <label>Tipo
@@ -906,14 +957,21 @@ function logout() {
         <section class="card card-wide">
           <h3>Tarefas</h3>
           <p><code>GET/POST/PATCH/DELETE /tarefas/</code> · <code>GET /tarefas/atrasadas/</code></p>
+          <form class="inline-form" @submit.prevent="listarTarefas">
+            <label class="checkbox-label">
+              <input v-model="somenteTarefasAtrasadas" type="checkbox" /> Somente atrasadas
+            </label>
+            <button>Aplicar filtro</button>
+          </form>
           <form @submit.prevent="salvarTarefa(true)">
             <label>Título<input v-model="tarefaForm.titulo" maxlength="150" required /></label>
             <label>Descrição<textarea v-model="tarefaForm.descricao" rows="3"></textarea></label>
             <label>
               Prioridade
               <select v-model="tarefaForm.prioridade">
-                <option value="baixa">Baixa</option><option value="media">Média</option>
-                <option value="alta">Alta</option><option value="urgente">Urgente</option>
+                <option v-for="(prioridade, valor) in prioridades" :key="valor" :value="valor">
+                  {{ prioridade.nome }}
+                </option>
               </select>
             </label>
             <label>
@@ -943,13 +1001,19 @@ function logout() {
 
           <div class="table-wrapper spaced">
             <table>
-              <thead><tr><th>ID</th><th>Título</th><th>Prioridade</th><th>Situação</th><th>Ação</th></tr></thead>
+              <thead><tr><th>ID</th><th>Título</th><th>Prioridade</th><th>Situação</th><th>Criada em</th><th>Prazo</th><th>Categorias</th><th>Ação</th></tr></thead>
               <tbody>
                 <tr v-for="tarefa in tarefaStore.tarefas" :key="tarefa.id">
-                  <td>{{ tarefa.id }}</td><td>{{ tarefa.titulo }}</td><td>{{ tarefa.prioridade }}</td><td>{{ nomeSituacao(tarefa.situacao) }}</td>
+                  <td>{{ tarefa.id }}</td>
+                  <td>{{ tarefa.titulo }}</td>
+                  <td>{{ tarefa.prioridade }}</td>
+                  <td>{{ nomeSituacao(tarefa.situacao) }}</td>
+                  <td>{{ new Date(tarefa.criado_em).toLocaleString('pt-BR') }}</td>
+                  <td>{{ tarefa.prazo ? new Date(tarefa.prazo).toLocaleString('pt-BR') : 'Sem prazo' }}</td>
+                  <td>{{ tarefa.categoria?.join(', ') || 'Sem categoria' }}</td>
                   <td><button type="button" class="small" @click="selecionarTarefa(tarefa)">Selecionar</button></td>
                 </tr>
-                <tr v-if="!tarefaStore.tarefas.length"><td colspan="5">Nenhuma tarefa carregada.</td></tr>
+                <tr v-if="!tarefaStore.tarefas.length"><td colspan="8">Nenhuma tarefa carregada.</td></tr>
               </tbody>
             </table>
           </div>
