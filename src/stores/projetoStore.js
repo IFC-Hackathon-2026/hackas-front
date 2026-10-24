@@ -5,8 +5,17 @@ import { useUserStore } from '@/stores/userStore'
 
 const projetoService = new ProjetoService()
 
+const resumoVazio = Object.freeze({
+  total: 0,
+  concluidas: 0,
+  nao_concluidas: 0,
+  atrasadas: 0,
+  progresso: 0,
+})
+
 export const useProjetoStore = defineStore('projeto', () => {
   const userStore = useUserStore()
+  let consultaProjetos = 0
   let selecao = 0
   let consultaAtual = null
   let idConsulta = null
@@ -29,6 +38,7 @@ export const useProjetoStore = defineStore('projeto', () => {
     })),
   )
   const meuCargo = computed(() => projetoAtual.value?.meu_cargo ?? null)
+  const resumoTarefas = computed(() => projetoAtual.value?.resumo_tarefas ?? resumoVazio)
   const podeEditar = computed(() => ['fundador', 'organizador'].includes(meuCargo.value))
 
   const podeExcluir = computed(() => {
@@ -63,8 +73,10 @@ export const useProjetoStore = defineStore('projeto', () => {
 
   // params aceita meus, search e os parâmetros de paginação da API.
   function getProjetos(params = {}) {
+    const consulta = ++consultaProjetos
     return execute(async () => {
       const { data } = await projetoService.getProjetos(params)
+      if (consulta !== consultaProjetos) return data.results ?? data
       projetos.value = data.results ?? data
       total.value = data.count ?? projetos.value.length
       next.value = data.next ?? null
@@ -187,7 +199,7 @@ export const useProjetoStore = defineStore('projeto', () => {
 
   return {
     projetos, projetosDestaque, projetoAtual, total, next, previous, loading, error,
-    participantes, meuCargo, podeEditar, podeExcluir, podeConfigurar,
+    participantes, meuCargo, resumoTarefas, podeEditar, podeExcluir, podeConfigurar,
     getProjetos, getMeusProjetos, getProjetosDestaque, getProjeto, selecionarProjeto,
     createProjeto, updateProjeto, deleteProjeto, updatePhoto,
     updateParticipante, deleteParticipante, reset,

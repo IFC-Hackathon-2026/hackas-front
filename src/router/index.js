@@ -68,6 +68,8 @@ const router = createRouter({
         const id = to.params.id || to.query.id
         return id ? { name: 'config', params: { id } } : { name: 'eventos' }
       },
+      meta: { requiresAuth: true },
+      component: () => import('../components/atalhos/princiapalconfigComponent.vue'),
     },
     {
       path: '/perfil',
