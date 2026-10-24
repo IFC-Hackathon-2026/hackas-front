@@ -6,6 +6,7 @@ import { useStatusStore } from '@/stores/statusStore'
 import { useCategoriaStore } from '@/stores/categoriaStore'
 import { useTarefaStore } from '@/stores/tarefaStore'
 import { useDocumentoStore } from '@/stores/documentoStore'
+import { usePedidoParticipacaoStore } from '@/stores/pedidoParticipacaoStore'
 
 defineOptions({ name: 'ApiPlayground' })
 
@@ -15,6 +16,7 @@ const statusStore = useStatusStore()
 const categoriaStore = useCategoriaStore()
 const tarefaStore = useTarefaStore()
 const documentoStore = useDocumentoStore()
+const pedidoStore = usePedidoParticipacaoStore()
 const projetoForm = reactive({ nome: '', descricao: '' })
 const projetoFiltros = reactive({ search: '', meus: true, page: 1 })
 const projetoId = ref('')
@@ -31,7 +33,8 @@ const documentoSelecionadoId = ref('')
 const documentoArquivo = ref(null)
 const documentoBusca = ref('')
 const documentoForm = reactive({ nome: '', tarefa: '', description: '' })
-const participanteForm = reactive({ usuario: '', cargo: 'membro' })
+const pedidoFiltros = reactive({ status: 'pendente', tipo: '', projeto: '' })
+const conviteUsuarioId = ref('')
 
 const projetoSelecionadoId = computed(() => projetoStore.projetoAtual?.id ?? null)
 
@@ -203,6 +206,64 @@ async function listarProjetos() {
   }), 'Projetos carregados.')
 }
 
+async function solicitarEntrada(projeto) {
+  const pedido = await run(
+    () => pedidoStore.solicitarEntrada(projeto.id),
+    `Solicitação enviada para o projeto “${projeto.nome}”.`,
+  )
+  if (pedido) await userStore.getMe()
+}
+
+async function listarPedidos() {
+  const params = {
+    status: pedidoFiltros.status || undefined,
+    tipo: pedidoFiltros.tipo || undefined,
+    projeto: pedidoFiltros.projeto || undefined,
+    page_size: 100,
+  }
+  await run(() => pedidoStore.getPedidos(params), 'Pedidos e convites carregados.')
+}
+
+async function carregarMeusConvites() {
+  Object.assign(pedidoFiltros, { status: 'pendente', tipo: 'convite', projeto: '' })
+  await listarPedidos()
+}
+
+async function convidarUsuario() {
+  const projeto = projetoStore.projetoAtual
+  const pedido = await run(
+    () => pedidoStore.convidarUsuario(projeto.id, conviteUsuarioId.value),
+    'Convite enviado ao usuário.',
+  )
+  if (pedido) conviteUsuarioId.value = ''
+}
+
+function cargoNoProjeto(projetoId) {
+  if (String(projetoStore.projetoAtual?.id) === String(projetoId)) return projetoStore.meuCargo
+  return projetoStore.projetos.find((item) => String(item.id) === String(projetoId))?.meu_cargo
+}
+
+function podeResponderPedido(pedido) {
+  if (pedido.status !== 'pendente') return false
+  if (pedido.tipo === 'convite') return pedido.usuario_detalhe?.id === userStore.user?.id
+  return ['fundador', 'organizador'].includes(cargoNoProjeto(pedido.projeto_detalhe?.id))
+}
+
+async function responderPedido(pedido, aceitar) {
+  const resultado = await run(
+    () => aceitar ? pedidoStore.aceitarPedido(pedido.id) : pedidoStore.recusarPedido(pedido.id),
+    aceitar ? 'Pedido aceito.' : 'Pedido recusado.',
+  )
+  if (resultado && aceitar) {
+    const atualId = projetoStore.projetoAtual?.id
+    await Promise.all([
+      userStore.getMe(),
+      projetoStore.getProjetos({ meus: 'true' }),
+      atualId ? projetoStore.selecionarProjeto(atualId) : Promise.resolve(),
+    ])
+  }
+}
+
 async function consultarProjeto(id = projetoId.value) {
   const projeto = await run(() => projetoStore.selecionarProjeto(id), 'Projeto carregado.')
   if (projeto) {
@@ -241,14 +302,6 @@ async function alterarCargoParticipante(participante, cargo) {
   )
 }
 
-async function adicionarParticipante() {
-  const projeto = await run(
-    () => projetoStore.createParticipante(participanteForm.usuario, participanteForm.cargo),
-    'Participante adicionado ou atualizado no projeto.',
-  )
-  if (projeto) participanteForm.usuario = ''
-}
-
 async function removerParticipante(participante) {
   if (!window.confirm(`Remover ${participante.name || participante.email} do projeto?`)) return
   await run(
@@ -284,8 +337,29 @@ function resolveMediaUrl(url) {
 function getErrorMessage(requestError) {
   const data = requestError.response?.data
   const stage = requestError.documentoStage ? `Falha no ${requestError.documentoStage}:\n` : ''
+  if (typeof data === 'string' && data.trimStart().startsWith('<!DOCTYPE html>')) {
+    const status = requestError.response?.status
+    const endpoint = requestError.config?.url ?? 'endpoint solicitado'
+    return `${stage}A API respondeu ${status ?? 'com erro'} para ${endpoint}. Verifique se a versão atual do back foi publicada.`
+  }
   if (data) return `${stage}${JSON.stringify(data, null, 2)}`
   return `${stage}${requestError.message ?? 'Erro desconhecido'}`
+}
+
+async function carregarSessao() {
+  Object.assign(pedidoFiltros, { status: 'pendente', tipo: '', projeto: '' })
+  const resultados = await Promise.allSettled([
+    pedidoStore.getPendentes({ page_size: 100 }),
+    projetoStore.getProjetos({ meus: 'false', page_size: 100 }),
+  ])
+  const [pedidos, projetos] = resultados
+  if (pedidos.status === 'rejected') {
+    const status = pedidos.reason.response?.status
+    message.value = `Login realizado. A API de convites respondeu ${status ?? 'com erro'}; verifique o deploy e a migration 0017.`
+  }
+  if (projetos.status === 'rejected') {
+    error.value = getErrorMessage(projetos.reason)
+  }
 }
 
 async function run(action, successMessage) {
@@ -306,23 +380,35 @@ async function run(action, successMessage) {
 }
 
 async function login() {
-  await run(
-    () => userStore.login(loginForm.email, loginForm.password),
+  const usuario = await run(async () => {
+    pedidoStore.reset()
+    projetoStore.reset()
+    statusStore.reset()
+    categoriaStore.reset()
+    tarefaStore.reset()
+    documentoStore.reset()
+    return userStore.login(loginForm.email, loginForm.password)
+  },
     'Login realizado e usuário carregado.',
   )
+  if (usuario) await carregarSessao()
 }
 
 async function register() {
-  await run(
-    () =>
-      userStore.register(
+  const usuario = await run(async () => {
+      await userStore.register(
         registerForm.email,
         registerForm.password,
         registerForm.name,
         registerForm.foto,
-      ),
+      )
+      pedidoStore.reset()
+      projetoStore.reset()
+      return userStore.user
+    },
     'Usuário cadastrado e autenticado.',
   )
+  if (usuario) await carregarSessao()
 }
 
 async function loadMe() {
@@ -375,6 +461,7 @@ function logout() {
   categoriaStore.reset()
   tarefaStore.reset()
   documentoStore.reset()
+  pedidoStore.reset()
   selectedUser.value = null
   message.value = 'Sessão encerrada.'
   error.value = ''
@@ -541,7 +628,15 @@ function logout() {
                   <td>{{ projeto.id }}</td><td>{{ projeto.nome }}</td>
                   <td>{{ projeto.meu_cargo || 'Sem participação' }}</td>
                   <td>{{ projeto.total_participantes }}</td>
-                  <td><button type="button" @click="consultarProjeto(projeto.id)">Selecionar</button></td>
+                  <td>
+                    <button type="button" @click="consultarProjeto(projeto.id)">Selecionar</button>
+                    <button
+                      v-if="!projeto.meu_cargo"
+                      type="button"
+                      class="small"
+                      @click="solicitarEntrada(projeto)"
+                    >Pedir entrada</button>
+                  </td>
                 </tr>
                 <tr v-if="!projetoStore.projetos.length"><td colspan="5">Nenhum projeto na listagem.</td></tr>
               </tbody>
@@ -580,29 +675,7 @@ function logout() {
               <button type="button" class="danger" :disabled="!projetoStore.podeExcluir" @click="excluirProjeto">Excluir projeto selecionado</button>
             </div>
             <h4 class="spaced">Participantes</h4>
-            <p><code>POST/PATCH/DELETE /projetos/{id}/participantes/...</code></p>
-            <form v-if="projetoStore.podeGerenciarParticipantes" @submit.prevent="adicionarParticipante">
-              <label>
-                Usuário
-                <select v-model="participanteForm.usuario" required>
-                  <option value="" disabled>Selecione um usuário</option>
-                  <option
-                    v-for="usuario in userStore.users.filter((item) => !projetoStore.participantes.some((participante) => participante.id === item.id))"
-                    :key="usuario.id"
-                    :value="usuario.id"
-                  >{{ usuario.name || usuario.email }} (ID {{ usuario.id }})</option>
-                </select>
-              </label>
-              <label>
-                Cargo inicial
-                <select v-model="participanteForm.cargo">
-                  <option value="membro">Membro</option>
-                  <option value="organizador">Organizador</option>
-                </select>
-              </label>
-              <button type="button" @click="run(() => userStore.getAllUsers(), 'Usuários disponíveis carregados.')">Carregar usuários</button>
-              <button :disabled="!participanteForm.usuario">Adicionar participante</button>
-            </form>
+            <p><code>PATCH/DELETE /projetos/{id}/participantes/{participacao_id}/</code></p>
             <ul>
               <li v-for="participante in projetoStore.participantes" :key="participante.id">
                 {{ participante.name || participante.email }} — {{ participante.cargo }}
@@ -626,6 +699,95 @@ function logout() {
             <pre>{{ JSON.stringify(projetoStore.projetoAtual, null, 2) }}</pre>
           </template>
           <p v-else>Nenhum projeto selecionado.</p>
+        </section>
+      </fieldset>
+    </section>
+
+    <section class="spaced" aria-labelledby="pedidos-title">
+      <div class="card-heading">
+        <div>
+          <h2 id="pedidos-title">Pedidos de entrada e convites</h2>
+          <p>Um usuário pede entrada em um projeto; um organizador também pode convidá-lo. A participação só nasce depois do aceite.</p>
+        </div>
+        <div>
+          <button :disabled="loading || !userStore.isAuthenticated" @click="carregarMeusConvites">Meus convites pendentes</button>
+          <button :disabled="loading || !userStore.isAuthenticated" @click="listarPedidos">Recarregar filtros</button>
+        </div>
+      </div>
+
+      <fieldset class="grid project-controls" :disabled="loading || !userStore.isAuthenticated">
+        <section class="card">
+          <h3>1. Consultar pendências</h3>
+          <p><code>GET /pedidos-participacao/</code></p>
+          <form @submit.prevent="listarPedidos">
+            <label>Status
+              <select v-model="pedidoFiltros.status">
+                <option value="">Todos</option>
+                <option value="pendente">Pendente</option>
+                <option value="aceito">Aceito</option>
+                <option value="recusado">Recusado</option>
+              </select>
+            </label>
+            <label>Tipo
+              <select v-model="pedidoFiltros.tipo">
+                <option value="">Todos</option>
+                <option value="solicitacao">Solicitação de entrada</option>
+                <option value="convite">Convite do projeto</option>
+              </select>
+            </label>
+            <label>Projeto (opcional)<input v-model.number="pedidoFiltros.projeto" type="number" min="1" /></label>
+            <button>Consultar</button>
+          </form>
+          <p>Convites nesta consulta: {{ pedidoStore.convites.length }}</p>
+          <p>Solicitações nesta consulta: {{ pedidoStore.solicitacoes.length }}</p>
+        </section>
+
+        <section class="card">
+          <h3>2. Convidar usuário</h3>
+          <p><code>POST /pedidos-participacao/</code></p>
+          <p>Selecione antes um projeto em que você seja fundador ou organizador.</p>
+          <form @submit.prevent="convidarUsuario">
+            <label>Projeto<input :value="projetoStore.projetoAtual?.nome || 'Nenhum projeto selecionado'" disabled /></label>
+            <label>Usuário
+              <select v-model="conviteUsuarioId" required>
+                <option value="" disabled>Selecione um usuário</option>
+                <option
+                  v-for="usuario in userStore.users.filter((item) => !projetoStore.participantes.some((participante) => participante.id === item.id))"
+                  :key="usuario.id"
+                  :value="usuario.id"
+                >{{ usuario.name || usuario.email }} (ID {{ usuario.id }})</option>
+              </select>
+            </label>
+            <button type="button" @click="run(() => userStore.getAllUsers(), 'Usuários carregados.')">Carregar usuários</button>
+            <button :disabled="!projetoStore.podeEditar || !conviteUsuarioId">Enviar convite</button>
+          </form>
+        </section>
+
+        <section class="card card-wide">
+          <h3>3. Responder</h3>
+          <p><code>POST /pedidos-participacao/{id}/aceitar/</code> ou <code>recusar/</code></p>
+          <div class="table-wrapper">
+            <table>
+              <thead><tr><th>ID</th><th>Tipo</th><th>Projeto</th><th>Usuário</th><th>Status</th><th>Ações</th></tr></thead>
+              <tbody>
+                <tr v-for="pedido in pedidoStore.pedidos" :key="pedido.id">
+                  <td>{{ pedido.id }}</td>
+                  <td>{{ pedido.tipo === 'convite' ? 'Convite' : 'Solicitação' }}</td>
+                  <td>{{ pedido.projeto_detalhe?.nome }} (ID {{ pedido.projeto_detalhe?.id }})</td>
+                  <td>{{ pedido.usuario_detalhe?.name || pedido.usuario_detalhe?.email }}</td>
+                  <td>{{ pedido.status }}</td>
+                  <td>
+                    <template v-if="podeResponderPedido(pedido)">
+                      <button type="button" class="small" @click="responderPedido(pedido, true)">Aceitar</button>
+                      <button type="button" class="small danger" @click="responderPedido(pedido, false)">Recusar</button>
+                    </template>
+                    <span v-else>Somente consulta</span>
+                  </td>
+                </tr>
+                <tr v-if="!pedidoStore.pedidos.length"><td colspan="6">Nenhum pedido encontrado com esses filtros.</td></tr>
+              </tbody>
+            </table>
+          </div>
         </section>
       </fieldset>
     </section>

@@ -30,10 +30,6 @@ export default class ProjetoService {
     return api.delete(`/projetos/${id}/`)
   }
 
-  createParticipante(projetoId, usuario, cargo = 'membro') {
-    return api.post(`/projetos/${projetoId}/participantes/`, { usuario, cargo })
-  }
-
   updateParticipante(projetoId, participacaoId, cargo) {
     return api.patch(`/projetos/${projetoId}/participantes/${participacaoId}/`, { cargo })
   }
