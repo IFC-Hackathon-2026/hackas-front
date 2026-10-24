@@ -3,6 +3,7 @@ import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import ParticipantesComponent from './participantesComponent.vue'
 import SolicitacoesComponent from './solicitacaoesComponent.vue'
+import novoConvite from './novoConvite.vue'
 import { useProjetoStore } from '@/stores/projetoStore'
 import { notificacao } from '@/services/notificacaoService'
 
@@ -15,6 +16,7 @@ const erroExclusao = ref('')
 const router = useRouter()
 
 const abas = ref('participantes')
+const versaoSolicitacoes = ref(0)
 const route = useRoute()
 const equipeId = computed(() => String(route.params.id ?? route.query.id ?? ''))
 const podeVerConfiguracoes = computed(() => equipeId.value &&
@@ -93,6 +95,15 @@ async function excluirEquipe() {
           <span class="mdi mdi-account-plus-outline"></span>
           Solicitações
         </button>
+        <button
+          type="button"
+          class="aba"
+          :class="{ ativa: abas === 'convite' }"
+          @click="abas = 'convite'"
+        >
+          <span class="mdi mdi-email-plus-outline" aria-hidden="true"></span>
+          Novo convite
+        </button>
       </nav>
 
       <button v-if="projetoStore.podeExcluir" type="button" class="excluir" :disabled="excluindo" @click="excluirEquipe">
@@ -104,7 +115,8 @@ async function excluirEquipe() {
     <div class="conteudo">
       <p v-if="erroExclusao" class="erro-exclusao" role="alert">{{ erroExclusao }}</p>
       <ParticipantesComponent v-if="abas === 'participantes'" />
-      <SolicitacoesComponent v-else />
+      <SolicitacoesComponent v-else-if="abas === 'solicitacoes'" :key="versaoSolicitacoes" />
+      <novoConvite v-else @enviado="versaoSolicitacoes++" />
     </div>
   </div>
 </template>
@@ -139,6 +151,7 @@ async function excluirEquipe() {
 
 .abas {
   display: flex;
+  flex-direction: column;
   gap: 1rem;
 }
 

@@ -49,7 +49,7 @@ onUnmounted(() => {
 
 <template>
   <header class="app-header" :class="{ 'is-scrolled': isScrolled }">
-    <img src="/FarolFlow-logo-light.svg" alt="Logo Farol Flow" style="width: 130px; height: auto" />
+    <img class="header-logo" src="/FarolFlow-logo-light.svg" alt="Logo Farol Flow" style="width: 130px; height: auto" />
 
     <RouterLink v-if="!userStore.isAuthenticated" to="/login" class="botao-entrar">
       <span class="mdi mdi-login" aria-hidden="true"></span>
@@ -181,5 +181,38 @@ onUnmounted(() => {
   .botao-entrar::before {
     transition: none;
   }
+}
+
+@media (max-width: 600px) {
+  .app-header {
+    padding: 1rem 20px;
+    gap: 1rem;
+  }
+  .app-header > img {
+    max-width: 84px;
+    flex-shrink: 0;
+  }
+  .botao-entrar,
+  .profile-link {
+    min-height: 44px;
+  }
+}
+
+@media (max-width: 949px) {
+  .app-header { padding: 1rem 20px; gap: 12px; }
+  .header-logo { margin-right: auto; min-width: 0; }
+}
+
+@media (max-width: 600px) {
+  .app-header { padding-block: 0.75rem; }
+  .botao-entrar {
+    width: auto;
+    min-height: 34px;
+    height: 34px;
+    padding-inline: 10px;
+    gap: 5px;
+    font-size: 0.8125rem;
+  }
+  .botao-entrar .mdi { font-size: 1rem; }
 }
 </style>

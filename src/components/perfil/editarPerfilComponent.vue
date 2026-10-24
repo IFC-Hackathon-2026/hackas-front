@@ -473,4 +473,65 @@ form {
     width: 100%;
   }
 }
+
+@media (max-width: 600px) {
+  .campo,
+  .foto-acoes {
+    min-width: 0;
+  }
+  label,
+  .foto-titulo {
+    font-size: 0.9375rem;
+  }
+  .foto-box {
+    padding: 1rem;
+  }
+  .foto-conteudo {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+  .foto-preview {
+    width: 80px;
+    height: 80px;
+  }
+  .btn-salvar {
+    width: 100%;
+  }
+  .btn-salvar,
+  .btn-alterar,
+  .aba,
+  .sair,
+  .voltar {
+    min-height: 44px;
+  }
+  .voltar {
+    min-width: 44px;
+    flex-shrink: 0;
+  }
+  .feedback {
+    overflow-wrap: anywhere;
+    font-size: 0.875rem;
+  }
+}
+@media (max-width: 600px) {
+  .foto-conteudo {
+    flex-direction: row;
+    align-items: center;
+    gap: 0.75rem;
+  }
+  .foto-preview {
+    width: 48px;
+    height: 48px;
+  }
+  .foto-acoes { flex: 1; gap: 0.375rem; }
+  .btn-alterar {
+    padding: 0.375rem 0.5rem;
+    gap: 0.375rem;
+    font-size: 0.8125rem;
+  }
+  .btn-alterar .mdi { font-size: 1rem; }
+  .foto-acoes small { font-size: 0.6875rem; }
+}
+
 </style>

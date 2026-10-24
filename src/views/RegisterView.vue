@@ -130,4 +130,58 @@ async function register() {
   display: flex;
   flex-direction: column;
 }
+
+@media (max-width: 600px) {
+  .container {
+    width: 100%;
+    min-width: 0;
+    height: auto;
+    min-height: 100dvh;
+    justify-content: flex-start;
+    padding-top: max(1.5rem, env(safe-area-inset-top, 0px));
+    padding-bottom: max(1.5rem, env(safe-area-inset-bottom, 0px));
+  }
+
+  .container-title {
+    text-align: center;
+    margin-bottom: 1.5rem;
+  }
+
+  .container-title h1 {
+    font-size: 1.5rem;
+  }
+
+  .container-title p {
+    font-size: 0.875rem;
+  }
+
+  .register-form {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .register-form :deep(.app-input) {
+    min-width: 0;
+    margin-bottom: 1rem;
+  }
+
+  .register-form :deep(.input-class) {
+    min-height: 48px;
+    font-size: 16px;
+  }
+
+  .register-form :deep(.app-button) {
+    min-height: 48px;
+    font-size: 1rem;
+  }
+
+  .container > a {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 44px;
+    text-align: center;
+    font-size: 0.875rem;
+  }
+}
 </style>
