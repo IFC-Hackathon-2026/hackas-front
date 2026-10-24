@@ -4,6 +4,14 @@ import UserService from "@/services/userService";
 
 const userService = new UserService();
 
+const resumoVazio = Object.freeze({
+  total: 0,
+  concluidas: 0,
+  nao_concluidas: 0,
+  atrasadas: 0,
+  progresso: 0,
+});
+
 function readToken(key) {
   const token = localStorage.getItem(key);
   if (!token || token === 'undefined' || token === 'null') {
@@ -25,6 +33,8 @@ export const useUserStore = defineStore('user', () => {
 
   const isAuthenticated = computed(() => !!accessToken.value);
 
+  const resumoTarefas = computed(() => user.value?.resumo_tarefas ?? resumoVazio);
+
   async function getMe() {
     const { data } = await userService.getMe();
     user.value = data;
@@ -38,8 +48,16 @@ export const useUserStore = defineStore('user', () => {
   }
 
   async function getAllUsers() {
-    const { data } = await userService.getAllUsers();
-    users.value = data.results ?? data;
+    const items = [];
+    let page = 1;
+    let hasNext;
+    do {
+      const { data } = await userService.getAllUsers({ page, page_size: 100 });
+      items.push(...(data.results ?? data));
+      hasNext = !Array.isArray(data) && (Boolean(data.next) || (data.total_pages != null && page < data.total_pages));
+      page++;
+    } while (hasNext);
+    users.value = items;
     return users.value;
   }
 
@@ -64,7 +82,7 @@ export const useUserStore = defineStore('user', () => {
     localStorage.setItem('refresh_token', data.refresh);
     accessToken.value = data.access;
     refreshToken.value = data.refresh;
-    await getMe();
+    return getMe();
   }
 
   async function register(email, password, name, foto) {
@@ -91,6 +109,7 @@ export const useUserStore = defineStore('user', () => {
     user,
     users,
     isAuthenticated,
+    resumoTarefas,
     login,
     register,
     logout,

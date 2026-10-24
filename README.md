@@ -42,3 +42,23 @@ npm run build
 ```sh
 npm run lint
 ```
+
+### PWA
+
+O PWA é configurado no `vite.config.js` com `vite-plugin-pwa`. O build gera o
+manifesto, o Service Worker e seu registro automático, usando os ícones
+`public/launchericon-192x192.png` e `public/launchericon-512x512.png`.
+
+Para testar a versão instalável:
+
+```sh
+npm run build
+npm run preview
+```
+
+Abra o endereço do preview e confira **Application > Manifest / Service Workers**
+no DevTools. Depois do primeiro carregamento e da ativação do Service Worker,
+os arquivos da interface ficam disponíveis offline. Consultas e alterações na
+API continuam exigindo conexão.
+
+Em produção, use HTTPS. O Service Worker não é ativado no `npm run dev`.

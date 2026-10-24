@@ -1,38 +1,62 @@
+
 <script setup>
-import { ref } from 'vue'
-import { useRouter, RouterLink } from 'vue-router'
-import { useUserStore } from '@/stores/userStore'
-import AppButton from '@/components/forms/AppButton.vue'
+import { ref } from 'vue';
+import { RouterLink, useRouter } from 'vue-router';
+import { useUserStore } from '@/stores/userStore';
+import { notificacao } from '@/services/notificacaoService';
+import AppButton from '@/components/forms/AppButton.vue';
+import appArrow from '../layout/appArrow.vue';
 
-const userStore = useUserStore()
-const router = useRouter()
+const userStore = useUserStore();
+const router = useRouter();
 
-const email = ref('')
-const password = ref('')
-const showPassword = ref(false)
-const loading = ref(false)
-const erroMessage = ref('')
+const emit = defineEmits([
+  'ir-para-cadastro',
+  'login-sucesso'
+]);
 
-async function login() {
-  loading.value = true
-  erroMessage.value = ''
-  try {
-    await userStore.login(email.value, password.value)
-    await router.replace({ name: 'home' })
-  } catch {
-    erroMessage.value = 'Não foi possível entrar. Confira seus dados e tente novamente.'
-  } finally {
-    loading.value = false
-  }
+const email = ref('');
+const password = ref('');
+const showPassword = ref(false);
+const loading = ref(false);
+const erroMessage = ref('');
+
+function voltarParaHome() {
+  router.push('/');
 }
 
-const emit = defineEmits(['ir-para-cadastro'])
+async function login() {
+  if (loading.value) return;
+
+  loading.value = true;
+  erroMessage.value = '';
+
+  try {
+    await userStore.login(email.value, password.value);
+    notificacao.sucesso('Login realizado com sucesso.');
+    emit('login-sucesso');
+  } catch {
+    erroMessage.value = 'Não foi possível entrar. Confira seus dados e tente novamente.';
+    notificacao.erro(erroMessage.value);
+  } finally {
+    loading.value = false;
+  }
+}
 </script>
 
 <template>
   <div class="container">
+    <div class="back-button">
+      <appArrow @back="voltarParaHome" />
+    </div>
+
     <div class="container-title">
-      <img class="logo" src="/FarolFlow-logo-light.svg" alt="Logo" />
+      <img
+        class="logo"
+        src="/FarolFlow-logo-light.svg"
+        alt="Logo"
+      />
+
       <h1>BEM VINDO DE VOLTA!</h1>
       <p>Faça login para acessar sua conta</p>
     </div>
@@ -40,6 +64,7 @@ const emit = defineEmits(['ir-para-cadastro'])
     <form @submit.prevent="login" class="login-form">
       <div class="field">
         <label for="email">E-mail</label>
+
         <input
           id="email"
           v-model="email"
@@ -52,6 +77,7 @@ const emit = defineEmits(['ir-para-cadastro'])
 
       <div class="field">
         <label for="senha">Senha</label>
+
         <div class="password-wrapper">
           <input
             id="senha"
@@ -61,45 +87,48 @@ const emit = defineEmits(['ir-para-cadastro'])
             autocomplete="current-password"
             required
           />
+
           <button
             type="button"
             class="toggle-password"
             :aria-label="showPassword ? 'Ocultar senha' : 'Mostrar senha'"
+            :aria-pressed="showPassword"
             @click="showPassword = !showPassword"
           >
-            <svg
-              v-if="!showPassword"
-              width="26"
-              height="26"
-              viewBox="0 0 24 24"
-              fill="currentColor"
-            >
-              <path
-                d="M12 5C6.5 5 2.1 8.4 1 12c1.1 3.6 5.5 7 11 7s9.9-3.4 11-7c-1.1-3.6-5.5-7-11-7Zm0 11.5a4.5 4.5 0 1 1 0-9 4.5 4.5 0 0 1 0 9Zm0-7a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5Z"
-              />
-            </svg>
-            <svg v-else width="26" height="26" viewBox="0 0 24 24" fill="currentColor">
-              <path
-                d="M12 5C6.5 5 2.1 8.4 1 12c1.1 3.6 5.5 7 11 7s9.9-3.4 11-7c-1.1-3.6-5.5-7-11-7Zm0 11.5a4.5 4.5 0 1 1 0-9 4.5 4.5 0 0 1 0 9Z"
-              />
-              <path d="M3 3l18 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
-            </svg>
+            <span
+              :class="showPassword ? 'mdi mdi-eye-off-outline' : 'mdi mdi-eye-outline'"
+              aria-hidden="true"
+            ></span>
           </button>
         </div>
       </div>
 
-      <p v-if="erroMessage" class="error">{{ erroMessage }}</p>
+      <p v-if="erroMessage" class="error" role="alert">
+        {{ erroMessage }}
+      </p>
 
-      <AppButton type="submit" :disabled="loading" class="btn-entrar">
+      <AppButton
+        type="submit"
+        :disabled="loading"
+        class="btn-entrar"
+      >
         {{ loading ? 'Entrando...' : 'Entrar' }}
       </AppButton>
 
-      <RouterLink to="/esqueci-senha" class="forgot">Esqueceu sua senha?</RouterLink>
+      <RouterLink to="/esqueci-senha" class="forgot">
+        Esqueceu sua senha?
+      </RouterLink>
     </form>
 
     <p class="signup">
       Não possui uma conta?
-      <a href="#" @click.prevent="emit('ir-para-cadastro')">Cadastre-se.</a>
+
+      <a
+        href="#"
+        @click.prevent="emit('ir-para-cadastro')"
+      >
+        Cadastre-se.
+      </a>
     </p>
   </div>
 </template>
@@ -108,6 +137,7 @@ const emit = defineEmits(['ir-para-cadastro'])
 .container {
   --azul: var(--primaria, #00265c);
 
+  position: relative;
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -118,6 +148,35 @@ const emit = defineEmits(['ir-para-cadastro'])
   min-height: 100dvh;
   padding: 1.25rem 0;
   box-sizing: border-box;
+}
+
+.back-button {
+  align-self: flex-start;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  margin-left: -15px;
+  margin-bottom: 0.5rem;
+  background: none;
+  border: none;
+  padding: 0;
+  color: #111;
+  cursor: pointer;
+  transition: color 0.3s ease, transform 0.3s ease;
+}
+
+.back-button :deep(.arrow) {
+  display: flex;
+  align-items: center;
+  line-height: 1;
+  color: inherit;
+}
+
+.back-button:hover {
+  color: var(--azul);
+  transform: translateX(-3px);
 }
 
 .container-title {
@@ -183,6 +242,7 @@ const emit = defineEmits(['ir-para-cadastro'])
 
 .password-wrapper {
   position: relative;
+  width: 100%;
 }
 
 .password-wrapper input {
@@ -195,11 +255,21 @@ const emit = defineEmits(['ir-para-cadastro'])
   right: 1rem;
   transform: translateY(-50%);
   display: flex;
-  background: none;
-  border: none;
-  cursor: pointer;
-  color: var(--azul);
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
   padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--azul);
+  cursor: pointer;
+}
+
+.toggle-password .mdi {
+  display: block;
+  font-size: 24px;
+  line-height: 1;
 }
 
 .error {
@@ -213,9 +283,11 @@ const emit = defineEmits(['ir-para-cadastro'])
   color: var(--azul);
   text-decoration: none;
 }
+
 .btn-entrar {
   margin-top: 10px;
 }
+
 .signup {
   text-align: center;
   margin-top: 1.5rem;
@@ -247,9 +319,107 @@ const emit = defineEmits(['ir-para-cadastro'])
     width: 160px;
     margin-bottom: 0.75rem;
   }
+}
+
+@media (max-width: 600px) {
+  .container {
+    width: 100%;
+    min-width: 0;
+    justify-content: flex-start;
+    padding-top: max(1rem, env(safe-area-inset-top, 0px));
+    padding-bottom: max(1.5rem, env(safe-area-inset-bottom, 0px));
+  }
+
+  .back-button {
+    flex-shrink: 0;
+    margin-left: 0;
+    margin-bottom: 1rem;
+  }
 
   .container-title {
+    width: 100%;
+    margin-bottom: 1.5rem;
+  }
+
+  .logo {
+    width: clamp(140px, 42vw, 170px);
     margin-bottom: 1rem;
+  }
+
+  .container-title h1 {
+    font-size: clamp(1.25rem, 5.5vw, 1.65rem);
+    line-height: 1.3;
+  }
+
+  .container-title p {
+    font-size: 0.875rem;
+    line-height: 1.5;
+  }
+
+  .error {
+    font-size: 0.875rem;
+    overflow-wrap: anywhere;
+  }
+
+  .login-form,
+  .field,
+  .password-wrapper {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .field label {
+    font-size: 0.9375rem;
+  }
+
+  .field input {
+    min-width: 0;
+    min-height: 48px;
+    padding-inline: 1rem;
+    font-size: 16px;
+  }
+
+  .password-wrapper input {
+    padding-right: 3.5rem;
+  }
+
+  .toggle-password {
+    right: 0.25rem;
+    width: 44px;
+    height: 44px;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .login-form :deep(.app-button) {
+    width: 100%;
+    min-height: 48px;
+    font-size: 1rem;
+  }
+
+  .forgot,
+  .signup a {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 44px;
+  }
+
+  .forgot {
+    margin-top: 0.75rem;
+    font-size: 0.875rem;
+  }
+
+  .signup {
+    margin-top: 1rem;
+    font-size: 0.875rem;
+  }
+}
+
+
+@media (max-width: 600px) {
+  .logo {
+    width: clamp(110px, 32vw, 132px);
   }
 }
 </style>
