@@ -259,4 +259,15 @@ const visiblePages = computed(() => {
     font-size: 16px;
   }
 }
+
+@media (max-width: 600px) {
+  .pagination { gap: 12px; margin: 20px 0; }
+  .go-to { width: 100%; padding: 8px; gap: 8px; }
+  .page-input-wrapper { flex: 1; min-width: 0; }
+  .page-input-wrapper :deep(.app-input) { width: 100%; margin-bottom: 0; }
+  .page-input-wrapper :deep(.input-class) { height: 40px; font-size: 16px; }
+  .pages { gap: 2px; }
+  .pagination button { min-width: 40px; min-height: 40px; padding: 6px; }
+  .dots { font-size: 0.875rem; }
+}
 </style>

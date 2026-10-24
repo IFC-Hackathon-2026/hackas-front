@@ -11,7 +11,7 @@ import { notificacao } from '@/services/notificacaoService'
 const router = useRouter()
 const projetoStore = useProjetoStore()
 const userStore = useUserStore()
-const eventosDestaque = computed(() => projetoStore.projetosDestaque)
+const eventosDestaque = computed(() => projetoStore.projetosDestaque.slice(0, 3))
 
 function nomeCategoria(evento) {
   const categoria = evento.categorias?.[0]

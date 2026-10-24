@@ -357,6 +357,11 @@ button:focus-visible {
 }
 
 @media (max-width: 700px) {
-   .members-grid { grid-template-columns: minmax(0, 1fr); gap: 28px; } 
+   .team-title { margin-bottom: 20px; font-size: 1.125rem; }
+   .members-grid { grid-template-columns: minmax(0, 1fr); gap: 20px; }
+   .avatar { width: 52px; height: 52px; }
+   .member { gap: 10px; }
+   .more { display: grid; place-items: center; width: 44px; height: 44px; }
+   .action-menu { top: 44px; width: min(180px, 70vw); }
    }
 </style>

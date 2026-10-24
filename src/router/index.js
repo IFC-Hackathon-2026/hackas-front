@@ -17,6 +17,7 @@ const router = createRouter({
       alias: '/home',
       name: 'home',
       component: HomeView,
+      meta: { guestOnly: true },
     },
     {
       path: '/eventos',

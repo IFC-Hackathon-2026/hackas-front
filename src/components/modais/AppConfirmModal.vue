@@ -61,4 +61,9 @@ function confirmar() {
 .error {
   color: #b91c1c;
 }
+
+@media (max-width: 420px) {
+  .confirmation-actions { flex-direction: column-reverse; }
+  .confirmation-actions :deep(.app-button) { width: 100%; min-height: 44px; }
+}
 </style>

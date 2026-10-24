@@ -143,4 +143,16 @@ onBeforeUnmount(restaurarNotificacoes)
 .close-button:hover {
   background: rgb(0 0 0 / 8%);
 }
+
+@media (max-width: 600px) {
+  .app-modal {
+    width: calc(100vw - 1rem);
+    max-height: calc(100dvh - 1rem);
+    padding: 1rem;
+    border-radius: 10px;
+  }
+  .modal-header { margin-bottom: 1rem; }
+  .modal-header h2 { font-size: 1.1rem; }
+  .close-button { width: 44px; height: 44px; }
+}
 </style>

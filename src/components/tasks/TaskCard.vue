@@ -153,4 +153,11 @@ function formatarData(data) {
   box-shadow: 0 4px 16px rgb(0 18 40 / 15%);
   transform: translateY(-4px);
 }
+
+@media (max-width: 600px) {
+  .task-card { min-height: 5rem; padding: 0.75rem; }
+  .task-card:hover { transform: none; }
+  .task-drag-handle { display: grid; place-items: center; min-width: 32px; }
+  .task-tag { font-size: 0.6875rem; }
+}
 </style>

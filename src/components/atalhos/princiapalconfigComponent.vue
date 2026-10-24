@@ -236,8 +236,16 @@ async function excluirEquipe() {
 .excluir { margin-top: auto; white-space: nowrap; }
 @media (max-width: 949px) {
   .config { margin-top: 24px; }
-  .sidebar { padding-bottom: 20px; border-bottom: 1px solid #dedede; }
-  .abas { flex-wrap: wrap; }
-  .excluir { font-size: 1rem; } 
+  .sidebar { gap: 0.75rem; padding-bottom: 12px; border-bottom: 1px solid #dedede; }
+  .abas {
+    flex-wrap: nowrap;
+    gap: 0.75rem;
+    overflow-x: auto;
+    scrollbar-width: thin;
+  }
+  .aba { flex-shrink: 0; min-height: 44px; font-size: 0.8125rem; gap: 0.4rem; }
+  .aba .mdi { font-size: 1.2rem; }
+  .excluir { min-height: 44px; margin-top: 0; font-size: 0.875rem; }
+  .excluir .mdi { font-size: 1.25rem; }
 }
 </style>
