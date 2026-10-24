@@ -1,11 +1,35 @@
-
 <script setup>
-import { onMounted, onUnmounted, ref } from 'vue'
-import { RouterLink } from 'vue-router'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useUserStore } from '@/stores/userStore'
+import { RouterLink } from 'vue-router'
+import api from '@/api/config'
 
 const userStore = useUserStore()
 const isScrolled = ref(false)
+const photoFailed = ref(false)
+const photoUrl = computed(() => {
+  const url = userStore.user?.foto?.url
+  if (!url) return ''
+  return new URL(url, new URL(api.defaults.baseURL, window.location.origin)).href
+})
+
+watch(photoUrl, () => {
+  photoFailed.value = false
+})
+
+watch(
+  () => userStore.isAuthenticated,
+  async (authenticated) => {
+    if (authenticated && !userStore.user) {
+      try {
+        await userStore.getMe()
+      } catch (error) {
+        console.error('Não foi possível carregar o perfil do usuário.', error)
+      }
+    }
+  },
+  { immediate: true },
+)
 
 function updateScroll() {
   isScrolled.value = window.scrollY > 0
@@ -23,27 +47,23 @@ onUnmounted(() => {
 
 <template>
   <header class="app-header" :class="{ 'is-scrolled': isScrolled }">
-    <img
-      src="/FarolFlow-logo-light.svg"
-      alt="Logo Farol Flow"
-      style="width: 130px; height: auto;"
-    />
+    <img src="/FarolFlow-logo-light.svg" alt="Logo Farol Flow" style="width: 130px; height: auto" />
 
-    <RouterLink
-      v-if="!userStore.isAuthenticated"
-      to="/login"
-      class="botao-entrar"
-    >
+    <RouterLink v-if="!userStore.isAuthenticated" to="/login" class="botao-entrar">
       <span class="mdi mdi-login" aria-hidden="true"></span>
       <span>Entrar</span>
     </RouterLink>
 
-    <span
-      v-else
-      class="mdi mdi-account-circle-outline"
-      style="font-size: 2rem;"
-      aria-label="Usuário"
-    ></span>
+    <RouterLink v-else to="/perfil" class="profile-link" aria-label="Meu perfil">
+      <img
+        v-if="photoUrl && !photoFailed"
+        :src="photoUrl"
+        alt="Foto do perfil"
+        class="user-avatar"
+        @error="photoFailed = true"
+      />
+      <span v-else class="mdi mdi-account-circle-outline" aria-hidden="true"></span>
+    </RouterLink>
   </header>
 </template>
 
@@ -67,6 +87,20 @@ onUnmounted(() => {
 
 .app-header.is-scrolled {
   box-shadow: 0 4px 16px rgb(0 18 40 / 12%);
+}
+.user-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.profile-link {
+  display: inline-flex;
+  align-items: center;
+  color: inherit;
+  text-decoration: none;
+  font-size: 2rem;
 }
 
 .botao-entrar {

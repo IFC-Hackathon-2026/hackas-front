@@ -16,7 +16,6 @@ const router = createRouter({
       path: '/',
       name: 'home',
       component: HomeView,
-      meta: { guestOnly: true },
     },
     {
       path: '/eventos',
@@ -39,6 +38,24 @@ const router = createRouter({
       name: 'cadastro',
       component: () => import('../views/RegisterView.vue'),
       meta: { guestOnly: true },
+    },
+    {
+      path: '/dashboard/:id',
+      name: 'dashboard',
+      meta: { requiresAuth: true },
+      component: () => import('../components/layout/atalhosEventoComponent.vue'),
+    },
+    {
+      path: '/config/:id?',
+      name: 'config',
+      meta: { requiresAuth: true },
+      component: () => import('../components/atalhos/princiapalconfigComponent.vue'),
+    },
+    {
+      path: '/perfil',
+      name: 'perfil',
+      component: () => import('../views/PerfilView.vue'),
+      meta: { requiresAuth: true },
     },
   ],
 })

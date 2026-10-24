@@ -1,18 +1,14 @@
-
 <script setup>
-import { reactive, ref } from 'vue';
-import { useUserStore } from '@/stores/userStore';
-import appArrow from '../layout/appArrow.vue';
-import AppInput from '@/components/forms/AppInput.vue';
-import AppButton from '@/components/forms/AppButton.vue';
-import StepIndicator from '../layout/StepIndicator.vue';
+import { reactive, ref } from 'vue'
+import { useUserStore } from '@/stores/userStore'
+import appArrow from '../layout/appArrow.vue'
+import AppInput from '@/components/forms/AppInput.vue'
+import AppButton from '@/components/forms/AppButton.vue'
+import StepIndicator from '../layout/StepIndicator.vue'
 
-const userStore = useUserStore();
+const userStore = useUserStore()
 
-const emit = defineEmits([
-  'ir-para-login',
-  'cadastro-sucesso'
-]);
+const emit = defineEmits(['ir-para-login', 'cadastro-sucesso'])
 
 const user = reactive({
   email: '',
@@ -27,26 +23,21 @@ const loading = ref(false)
 const erroMessage = ref('')
 
 async function register() {
-  if (loading.value) return;
+  if (loading.value) return
 
-  erroMessage.value = '';
+  erroMessage.value = ''
 
   if (user.password !== confirmPassword.value) {
     erroMessage.value = 'As senhas não coincidem.'
     return
   }
 
-  loading.value = true;
+  loading.value = true
 
   try {
-    await userStore.register(
-      user.email,
-      user.password,
-      user.name,
-      user.foto
-    );
+    await userStore.register(user.email, user.password, user.name, user.foto)
 
-    emit('cadastro-sucesso');
+    emit('cadastro-sucesso')
   } catch {
     erroMessage.value = 'Não foi possível fazer o cadastro. Tente novamente.'
   } finally {
@@ -99,9 +90,16 @@ async function register() {
         required
       />
 
-      <p v-if="erroMessage" role="alert" class="error">
-        {{ erroMessage }}
-      </p>
+      <label class="photo-field">
+        Foto do perfil (opcional)
+        <input
+          type="file"
+          accept="image/jpeg,image/png"
+          @change="user.foto = $event.target.files?.[0] ?? null"
+        />
+      </label>
+
+      <p v-if="erroMessage" role="alert" class="error">{{ erroMessage }}</p>
 
       <AppButton type="submit" :disabled="loading">
         {{ loading ? 'Cadastrando...' : 'Continuar' }}
@@ -113,6 +111,15 @@ async function register() {
 </template>
 
 <style scoped>
+.photo-field {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+.photo-field input {
+  max-width: 100%;
+}
+
 .container {
   --azul: var(--primaria, #00265c);
 

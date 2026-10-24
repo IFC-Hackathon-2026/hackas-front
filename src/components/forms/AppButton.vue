@@ -42,17 +42,30 @@ defineProps({
   --button-hover-text: #fff;
 }
 
+.app-button--danger {
+  --button-background: #fff;
+  --button-text: #b91c1c;
+  --button-hover-background: #b91c1c;
+  --button-hover-text: #fff;
+  --button-border: #b91c1c;
+}
+
 .app-button {
   position: relative;
   overflow: hidden;
   z-index: 0;
   width: 100%;
   height: 50px;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
   background: var(--button-background) !important;
   color: var(--button-text) !important;
   font-size: 1.25rem;
   font-weight: 700;
-  border: 2px solid var(--primaria, #01295f) !important;
+  border: 2px solid var(--button-border, var(--primaria, #01295f)) !important;
   border-radius: 6px;
   cursor: pointer;
   transition: color 0.4s ease;
@@ -61,7 +74,8 @@ defineProps({
 .app-button::before {
   content: '';
   position: absolute;
-  inset: 0;
+  inset: -2px;
+  border-radius: inherit;
   background: var(--button-hover-background);
   transform: scaleX(0);
   transform-origin: left;
@@ -82,7 +96,7 @@ defineProps({
 }
 
 .app-button:focus-visible {
-  outline: 2px solid var(--primaria, #01295f);
+  outline: 2px solid var(--button-border, var(--primaria, #01295f));
   outline-offset: 2px;
 }
 

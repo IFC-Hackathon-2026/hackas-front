@@ -1,35 +1,27 @@
 
 <script setup>
-import { computed, ref } from 'vue'
+import { computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import AppButton from '@/components/forms/AppButton.vue'
+import { PROJECT_CATEGORY_LABELS } from '@/constants/projectCategories'
+import { useProjetoStore } from '@/stores/projetoStore'
+import { useUserStore } from '@/stores/userStore'
 
 const router = useRouter()
+const projetoStore = useProjetoStore()
+const userStore = useUserStore()
+const eventosDestaque = computed(() => projetoStore.projetosDestaque)
 
-const eventos = ref([
-  {
-    id: 1,
-    titulo: 'Produto 1',
-    categoria: 'Categoria',
-    imagem: null
-  },
-  {
-    id: 2,
-    titulo: 'Produto 2',
-    categoria: 'Categoria',
-    imagem: null
-  },
-  {
-    id: 3,
-    titulo: 'Produto 3',
-    categoria: 'Categoria',
-    imagem: null
-  }
-])
-
-const eventosDestaque = computed(() => eventos.value.slice(0, 3))
+function nomeCategoria(evento) {
+  const categoria = evento.categorias?.[0]
+  return PROJECT_CATEGORY_LABELS[categoria] ?? 'Evento'
+}
 
 function navegarPara(destino) {
+  if (userStore.isAuthenticated) {
+    router.push(destino)
+    return
+  }
   router.push({
     path: '/login',
     query: {
@@ -52,6 +44,8 @@ function voltarAoTopo() {
     behavior: 'smooth'
   })
 }
+
+onMounted(() => projetoStore.getProjetosDestaque().catch(() => {}))
 </script>
 
 <template>
@@ -112,30 +106,38 @@ function voltarAoTopo() {
           </button>
         </div>
 
-    <ul class="lista-eventos">
+<p v-if="projetoStore.loading" class="estado-destaques">
+  Carregando destaques...
+</p>
+
+<p v-else-if="projetoStore.error" class="estado-destaques">
+  Não foi possível carregar os destaques.
+</p>
+
+<ul v-else-if="eventosDestaque.length" class="lista-eventos">
   <li
     v-for="evento in eventosDestaque"
     :key="evento.id"
     class="card-evento"
     role="link"
     tabindex="0"
-    :aria-label="`Ver evento ${evento.titulo}`"
+    :aria-label="`Ver evento ${evento.nome}`"
     @click="navegarPara(`/eventos/${evento.id}`)"
     @keydown.enter="navegarPara(`/eventos/${evento.id}`)"
     @keydown.space.prevent="navegarPara(`/eventos/${evento.id}`)"
   >
     <div class="evento-imagem">
       <img
-        v-if="evento.imagem"
-        :src="evento.imagem"
-        :alt="evento.titulo"
+        v-if="evento.foto?.url"
+        :src="evento.foto.url"
+        :alt="evento.nome"
       />
     </div>
 
     <div class="evento-informacoes">
       <div class="evento-textos">
-        <h3>{{ evento.titulo }}</h3>
-        <p>{{ evento.categoria }}</p>
+        <h3>{{ evento.nome }}</h3>
+        <p>{{ nomeCategoria(evento) }}</p>
       </div>
 
       <span class="evento-seta" aria-hidden="true">
@@ -144,6 +146,10 @@ function voltarAoTopo() {
     </div>
   </li>
 </ul>
+
+<p v-else class="estado-destaques">
+  Ainda não há eventos em destaque.
+</p>
       </section>
     </div>
 
@@ -329,6 +335,12 @@ function voltarAoTopo() {
   list-style: none;
   padding: 0;
   margin: 0;
+}
+
+.estado-destaques {
+  margin: 2rem 0;
+  color: #426b9c;
+  text-align: center;
 }
 
 .card-evento {
