@@ -3,6 +3,7 @@ import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useUserStore } from '@/stores/userStore'
 import { RouterLink } from 'vue-router'
 import api from '@/api/config'
+import { notificacao } from '@/services/notificacaoService'
 
 const userStore = useUserStore()
 const isScrolled = ref(false)
@@ -25,6 +26,7 @@ watch(
         await userStore.getMe()
       } catch (error) {
         console.error('Não foi possível carregar o perfil do usuário.', error)
+        notificacao.erro('Não foi possível carregar o perfil do usuário.')
       }
     }
   },

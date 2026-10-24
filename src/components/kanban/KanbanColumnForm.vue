@@ -2,6 +2,7 @@
 import { computed, ref } from 'vue'
 import { useStatusStore } from '@/stores/statusStore'
 import { apiErrorMessage } from '@/utils/apiErrorMessage'
+import { notificacao } from '@/services/notificacaoService'
 import AppInput from '../forms/AppInput.vue'
 import AppButton from '../forms/AppButton.vue'
 import TaskColorPicker from '../tasks/fields/TaskColorPicker.vue'
@@ -27,6 +28,7 @@ async function salvarColuna() {
   erro.value = ''
   if (!nome.value.trim() || nome.value.trim().length > 50) {
     erro.value = 'Informe um título de até 50 caracteres.'
+    notificacao.aviso(erro.value)
     return
   }
   salvando.value = true
@@ -40,6 +42,7 @@ async function salvarColuna() {
     emit('salvo', props.projetoId)
   } catch (error) {
     erro.value = apiErrorMessage(error, error.message || 'Não foi possível salvar a coluna.')
+    notificacao.erro(erro.value)
   } finally {
     salvando.value = false
   }

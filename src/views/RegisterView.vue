@@ -2,6 +2,7 @@
 import { reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/userStore'
+import { notificacao } from '@/services/notificacaoService'
 import AppInput from '@/components/forms/AppInput.vue'
 import AppButton from '@/components/forms/AppButton.vue'
 
@@ -25,14 +26,17 @@ async function register() {
   erroMessage.value = ''
   if (user.password !== confirmPassword.value) {
     erroMessage.value = 'As senhas não coincidem.'
+    notificacao.aviso(erroMessage.value)
     return
   }
   loading.value = true
   try {
     await userStore.register(user.email, user.password, user.name, user.foto)
+    notificacao.sucesso('Cadastro realizado com sucesso.')
     await router.replace({ name: 'eventos' })
   } catch {
     erroMessage.value = 'Não foi possível fazer o cadastro. Tente novamente.'
+    notificacao.erro(erroMessage.value)
   } finally {
     loading.value = false
   }

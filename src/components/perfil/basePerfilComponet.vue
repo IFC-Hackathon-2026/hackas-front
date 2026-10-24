@@ -37,6 +37,7 @@ onMounted(async () => {
 
 function sair() {
   userStore.logout()
+  notificacao.informacao('Sessão encerrada.')
   router.push('/login')
 }
 </script>

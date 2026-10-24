@@ -1,5 +1,6 @@
 <script setup>
 import { computed, reactive, ref } from 'vue'
+import { notificacao } from '@/services/notificacaoService'
 import { prioridades } from '@/constants/prioridades'
 import { useUserStore } from '@/stores/userStore'
 import { useProjetoStore } from '@/stores/projetoStore'
@@ -258,6 +259,7 @@ async function listarDocumentos() {
 async function criarDocumento() {
   if (!documentoArquivo.value) {
     error.value = 'Selecione um arquivo PDF.'
+    notificacao.aviso(error.value)
     return
   }
   const documento = await run(
@@ -462,9 +464,11 @@ async function carregarSessao() {
   if (pedidos.status === 'rejected') {
     const status = pedidos.reason.response?.status
     message.value = `Login realizado. A API de convites respondeu ${status ?? 'com erro'}; verifique o deploy e a migration 0017.`
+    notificacao.aviso(message.value)
   }
   if (projetos.status === 'rejected') {
     error.value = getErrorMessage(projetos.reason)
+    notificacao.erro(error.value)
   }
 }
 
@@ -476,9 +480,11 @@ async function run(action, successMessage) {
   try {
     const result = await action()
     message.value = successMessage
+    if (successMessage) notificacao.sucesso(successMessage)
     return result
   } catch (requestError) {
     error.value = getErrorMessage(requestError)
+    notificacao.erro(error.value)
     return null
   } finally {
     loading.value = false
@@ -536,6 +542,7 @@ async function updateProfile() {
 async function updatePhoto() {
   if (!profilePhoto.value) {
     error.value = 'Selecione uma imagem PNG ou JPEG.'
+    notificacao.aviso(error.value)
     return
   }
 
@@ -572,6 +579,7 @@ function logout() {
   pedidoStore.reset()
   selectedUser.value = null
   message.value = 'Sessão encerrada.'
+  notificacao.informacao(message.value)
   error.value = ''
 }
 </script>

@@ -1,6 +1,7 @@
 <script setup>
 import { reactive, ref } from 'vue'
 import { useUserStore } from '@/stores/userStore'
+import { notificacao } from '@/services/notificacaoService'
 import appArrow from '../layout/appArrow.vue'
 import AppInput from '@/components/forms/AppInput.vue'
 import AppButton from '@/components/forms/AppButton.vue'
@@ -29,6 +30,7 @@ async function register() {
 
   if (user.password !== confirmPassword.value) {
     erroMessage.value = 'As senhas não coincidem.'
+    notificacao.aviso(erroMessage.value)
     return
   }
 
@@ -36,10 +38,12 @@ async function register() {
 
   try {
     await userStore.register(user.email, user.password, user.name, user.foto)
+    notificacao.sucesso('Cadastro realizado com sucesso.')
 
     emit('cadastro-sucesso')
   } catch {
     erroMessage.value = 'Não foi possível fazer o cadastro. Tente novamente.'
+    notificacao.erro(erroMessage.value)
   } finally {
     loading.value = false
   }

@@ -9,11 +9,13 @@ import AppInput from '../forms/AppInput.vue'
 import AppButton from '../forms/AppButton.vue'
 import AppConfirmModal from '../modais/AppConfirmModal.vue'
 import { apiErrorMessage } from '@/utils/apiErrorMessage'
+import { notificacao } from '@/services/notificacaoService'
 import TaskCategoryField from './fields/TaskCategoryField.vue'
 import TaskAssigneeField from './fields/TaskAssigneeField.vue'
 import TaskDateFields from './fields/TaskDateFields.vue'
 import TaskPriorityField from './fields/TaskPriorityField.vue'
 import TaskDocuments from './TaskDocuments.vue'
+import TaskComments from './TaskComments.vue'
 
 const emit = defineEmits(['saved', 'deleted'])
 const tarefaStore = useTarefaStore()
@@ -72,6 +74,7 @@ async function loadOptions() {
     ])
   } catch {
     optionsError.value = 'Não foi possível carregar categorias e responsáveis.'
+    notificacao.erro(optionsError.value)
   } finally {
     loadingOptions.value = false
   }
@@ -90,10 +93,12 @@ async function saveTarefa() {
   errorMsg.value = ''
   if (!tarefaStore.tarefa.titulo.trim() || tarefaStore.tarefa.titulo.trim().length > 150) {
     errorMsg.value = 'Informe um título de até 150 caracteres.'
+    notificacao.aviso(errorMsg.value)
     return
   }
   if (categoriaPendente.value) {
     errorMsg.value = 'Adicione a nova categoria antes de salvar a tarefa.'
+    notificacao.aviso(errorMsg.value)
     return
   }
   loading.value = true
@@ -115,6 +120,7 @@ async function saveTarefa() {
     emit('saved', saved)
   } catch (error) {
     errorMsg.value = apiErrorMessage(error, 'Não foi possível salvar. Tente novamente.')
+    notificacao.erro(errorMsg.value)
   } finally {
     loading.value = false
   }
@@ -134,6 +140,7 @@ async function deleteTarefa() {
     emit('deleted')
   } catch (error) {
     erroExclusao.value = apiErrorMessage(error, 'Não foi possível excluir. Tente novamente.')
+    notificacao.erro(erroExclusao.value)
   } finally {
     deleting.value = false
   }
@@ -200,6 +207,11 @@ async function deleteTarefa() {
       </AppButton>
     </fieldset>
   </form>
+  <TaskComments
+    v-if="editing"
+    :tarefa-id="tarefaStore.tarefa.id"
+    :desabilitado="loading || deleting"
+  />
   <AppConfirmModal
     v-model:visible="confirmingDelete"
     titulo="Excluir tarefa"

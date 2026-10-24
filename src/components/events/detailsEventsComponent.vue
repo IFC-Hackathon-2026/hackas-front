@@ -3,6 +3,7 @@ import { computed, onScopeDispose, ref, watch } from 'vue'
 import { useProjetoStore } from '@/stores/projetoStore'
 import { PROJECT_CATEGORY_LABELS, PROJECT_CATEGORY_STYLES } from '@/constants/projectCategories'
 import api from '@/api/config'
+import { notificacao } from '@/services/notificacaoService'
 
 const props = defineProps({
   eventoId: { type: [String, Number], required: true },
@@ -28,9 +29,12 @@ async function carregar() {
     const projeto = await projetoStore.selecionarProjeto(props.eventoId)
     if (atual === consulta) evento.value = projeto
   } catch (error) {
-    if (atual === consulta) erro.value = error.response?.status === 404
-      ? 'Evento não encontrado.'
-      : 'Não foi possível carregar este evento.'
+    if (atual === consulta) {
+      erro.value = error.response?.status === 404
+        ? 'Evento não encontrado.'
+        : 'Não foi possível carregar este evento.'
+      notificacao.erro(erro.value)
+    }
   } finally {
     if (atual === consulta) carregando.value = false
   }

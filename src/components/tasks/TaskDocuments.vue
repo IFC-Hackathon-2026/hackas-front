@@ -2,6 +2,7 @@
 import { onUnmounted, ref, watch } from 'vue'
 import { useDocumentoStore } from '@/stores/documentoStore'
 import { apiErrorMessage } from '@/utils/apiErrorMessage'
+import { notificacao } from '@/services/notificacaoService'
 import DocumentCard from '../documents/DocumentCard.vue'
 import AppButton from '../forms/AppButton.vue'
 
@@ -24,7 +25,10 @@ async function carregarDocumentos() {
     const resultado = await documentoStore.getDocumentosDaTarefa(props.projetoId, props.tarefaId)
     if (atual === versao) documentos.value = resultado
   } catch (error) {
-    if (atual === versao) erro.value = apiErrorMessage(error, 'Não foi possível carregar os documentos da tarefa.')
+    if (atual === versao) {
+      erro.value = apiErrorMessage(error, 'Não foi possível carregar os documentos da tarefa.')
+      notificacao.erro(erro.value)
+    }
   } finally {
     if (atual === versao) carregando.value = false
   }

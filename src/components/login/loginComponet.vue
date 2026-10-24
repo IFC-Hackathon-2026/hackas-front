@@ -3,6 +3,7 @@
 import { ref } from 'vue';
 import { RouterLink, useRouter } from 'vue-router';
 import { useUserStore } from '@/stores/userStore';
+import { notificacao } from '@/services/notificacaoService';
 import AppButton from '@/components/forms/AppButton.vue';
 import appArrow from '../layout/appArrow.vue';
 
@@ -32,9 +33,11 @@ async function login() {
 
   try {
     await userStore.login(email.value, password.value);
+    notificacao.sucesso('Login realizado com sucesso.');
     emit('login-sucesso');
   } catch {
     erroMessage.value = 'Não foi possível entrar. Confira seus dados e tente novamente.';
+    notificacao.erro(erroMessage.value);
   } finally {
     loading.value = false;
   }

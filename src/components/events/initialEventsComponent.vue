@@ -3,6 +3,7 @@ import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import AppInput from '../forms/AppInput.vue';
 import { PROJECT_CATEGORIES, PROJECT_CATEGORY_LABELS, PROJECT_CATEGORY_STYLES } from '@/constants/projectCategories'
 import { useProjetoStore } from '@/stores/projetoStore'
+import { notificacao } from '@/services/notificacaoService'
 
 const projetoStore = useProjetoStore()
 const buscaProjeto = ref('')
@@ -39,13 +40,17 @@ const tituloFiltro = computed(() => {
 })
 
 async function carregarProjetos() {
-  await projetoStore.getProjetos({
-    search: buscaProjeto.value.trim() || undefined,
-    categorias: categoriasSelecionadas.value.length
-      ? categoriasSelecionadas.value
-      : undefined,
-    page_size: 100,
-  })
+  try {
+    await projetoStore.getProjetos({
+      search: buscaProjeto.value.trim() || undefined,
+      categorias: categoriasSelecionadas.value.length
+        ? categoriasSelecionadas.value
+        : undefined,
+      page_size: 100,
+    })
+  } catch {
+    notificacao.erro('Não foi possível carregar os eventos.')
+  }
 }
 
 function limparCategorias() {
