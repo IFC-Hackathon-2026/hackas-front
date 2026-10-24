@@ -47,7 +47,13 @@ onUnmounted(() => {
 
 <template>
   <header class="app-header" :class="{ 'is-scrolled': isScrolled }">
-    <img class="header-logo" src="/FarolFlow-logo-light.svg" alt="Logo Farol Flow" style="width: 130px; height: auto" />
+    <RouterLink to="/eventos" class="logo-link" aria-label="Ir para eventos">
+      <img
+        class="header-logo"
+        src="/FarolFlow-logo-light.svg"
+        alt="Logo Farol Flow"
+      />
+    </RouterLink>
 
     <RouterLink v-if="!userStore.isAuthenticated" to="/login" class="botao-entrar">
       <span class="mdi mdi-login" aria-hidden="true"></span>
@@ -88,6 +94,24 @@ onUnmounted(() => {
 .app-header.is-scrolled {
   box-shadow: 0 4px 16px rgb(0 18 40 / 12%);
 }
+
+.logo-link {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.header-logo {
+  width: 130px;
+  height: auto;
+}
+
+.logo-link:focus-visible {
+  border-radius: 4px;
+  outline: 2px solid #2767aa;
+  outline-offset: 4px;
+}
+
 .user-avatar {
   width: 40px;
   height: 40px;
@@ -186,9 +210,8 @@ onUnmounted(() => {
     padding: 1rem 20px;
     gap: 1rem;
   }
-  .app-header > img {
+  .header-logo {
     max-width: 84px;
-    flex-shrink: 0;
   }
   .botao-entrar,
   .profile-link {
@@ -198,7 +221,7 @@ onUnmounted(() => {
 
 @media (max-width: 949px) {
   .app-header { padding: 1rem 20px; gap: 12px; }
-  .header-logo { margin-right: auto; min-width: 0; }
+  .logo-link { margin-right: auto; min-width: 0; }
 }
 
 @media (max-width: 600px) {

@@ -71,9 +71,17 @@ a.active {
   font-size: 24px; 
 }
 @media (max-width: 600px) { 
-  .event-navigation { padding: 16px; }
-  ul { gap: 16px; } 
-  li { font-size: 13px; } 
+  .event-navigation {
+    justify-content: flex-start;
+    min-height: 0;
+    margin-top: 20px;
+    padding: 8px;
+    overflow-x: auto;
+    scrollbar-width: thin;
+  }
+  ul { flex-wrap: nowrap; justify-content: flex-start; gap: 4px; min-width: max-content; }
+  li, a { gap: 5px; min-height: 40px; padding-inline: 6px; }
+  li { font-size: 0.75rem; white-space: nowrap; }
   .mdi { font-size: 20px; } 
   }
 </style>

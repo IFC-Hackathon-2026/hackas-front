@@ -83,8 +83,11 @@ button { margin-top: 16px; padding: 8px 16px; cursor: pointer; }
 @media (max-width: 760px) {
   .event-page { margin-bottom: 48px; }
   .event-profile { grid-template-columns: 1fr; gap: 24px; }
-  .cover { height: auto; aspect-ratio: 1 / 1; max-height: 450px; }
+  .cover { height: auto; aspect-ratio: 16 / 10; max-height: 360px; }
   .back-link { margin-bottom: 24px; }
   .event-content { gap: 20px; }
+  .category { padding: 5px 12px; font-size: 0.75rem; }
+  .category .mdi { font-size: 1rem; }
+  .description { font-size: 1rem; line-height: 1.55; }
 }
 </style>

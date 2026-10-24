@@ -170,11 +170,13 @@ button:focus-visible { outline: 2px solid #2767aa; outline-offset: 3px; }
   .request-actions, .request-status { margin-left: 104px; }
 }
 @media (max-width: 480px) {
-  .request-tabs button { font-size: 16px; padding-inline: 12px; }
-  .avatar { width: 64px; height: 64px; }
+  .request-tabs { gap: 0; margin-bottom: 24px; overflow-x: auto; }
+  .request-tabs button { flex-shrink: 0; min-height: 44px; font-size: 0.875rem; padding: 0 10px 8px; }
+  .request-list { gap: 28px; }
+  .avatar { width: 52px; height: 52px; }
   .request-info { flex-basis: calc(100% - 80px); }
   .request-actions, .request-status { margin-left: 0; }
   .request-actions { width: 100%; gap: 12px; }
-  .request-actions button { flex: 1; min-width: 0; }
+  .request-actions button { flex: 1; min-width: 0; min-height: 44px; font-size: 0.8125rem; }
 }
 </style>

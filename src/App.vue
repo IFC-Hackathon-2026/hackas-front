@@ -45,7 +45,7 @@ const route = useRoute()
 
 @media (max-width: 760px) {
   .app-layout {
-    --page-padding: 1.25rem;
+    --page-padding: 1rem;
   }
 }
 </style>

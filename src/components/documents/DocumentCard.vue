@@ -78,4 +78,11 @@ a:focus-visible {
 p {
   color: #777;
 }
+
+@media (max-width: 600px) {
+  .document-card { align-items: flex-start; gap: 0.75rem; padding: 0.875rem; }
+  .document-icon { font-size: 1.5rem; }
+  h3 { font-size: 0.9375rem; }
+  a, p { font-size: 0.75rem; }
+}
 </style>

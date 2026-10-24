@@ -76,7 +76,7 @@ onBeforeUnmount(() => window.clearTimeout(buscaTimer))
         <AppInput v-model="buscaProjeto" label="Buscar eventos" type="search" placeholder="Buscar evento..." icon="mdi-magnify" />
       </div>
 
-      <details class="category-filter" open>
+      <details class="category-filter">
         <summary>
           {{ tituloFiltro }}
           <span class="mdi mdi-chevron-down" aria-hidden="true"></span>
@@ -442,7 +442,9 @@ onBeforeUnmount(() => window.clearTimeout(buscaTimer))
 
 @media (max-width: 600px) {
   .events-intro {
-    max-width: 100%;
+    width: calc(100% - 1rem);
+    max-width: calc(100% - 1rem);
+    margin: 0 auto;
     padding-block: 1.5rem;
   }
   .title h1 {
@@ -472,6 +474,29 @@ onBeforeUnmount(() => window.clearTimeout(buscaTimer))
   .category-option {
     min-height: 44px;
     align-items: center;
+  }
+  .category-filter,
+  .filter-panel {
+    width: 100%;
+  }
+  .event-results {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 1rem;
+    margin-top: 1.5rem;
+  }
+  .event-card img,
+  .event-placeholder {
+    height: auto;
+    aspect-ratio: 16 / 9;
+  }
+  .event-card__content {
+    padding: 0.875rem;
+  }
+  .event-tags {
+    justify-content: flex-start;
+  }
+  .event-details {
+    min-height: 44px;
   }
 }
 </style>

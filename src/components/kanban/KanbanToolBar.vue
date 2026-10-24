@@ -278,4 +278,20 @@ onUnmounted(() => {
   align-items: center;
   min-height: 40px;
 }
+
+@media (max-width: 600px) {
+  .search-area { gap: 0.25rem; }
+  .search-input :deep(.input-class) { height: 44px; font-size: 16px; }
+  .filter-button { width: 44px; height: 44px; font-size: 1.5rem; }
+  .filters-area {
+    left: 0;
+    right: 0;
+    width: 100%;
+    max-height: 70dvh;
+    padding: 1rem;
+  }
+  .filters-area select,
+  .filters-area input[type='date'] { min-height: 44px; font-size: 16px; }
+  .filters-area .filter-options label { min-height: 44px; }
+}
 </style>

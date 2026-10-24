@@ -1,5 +1,4 @@
 <script setup>
-import { ref } from "vue";
 import { onMounted } from "vue";
 import { useScheduleStore } from "@/stores/scheduleStore";
 
