@@ -23,7 +23,6 @@ onUnmounted(() => {
 <template>
   <header class="app-header" :class="{ 'is-scrolled': isScrolled }">
 
-    <!-- LOGO -->
     <RouterLink to="/">
       <img
         :src="LogoLight"
@@ -32,18 +31,15 @@ onUnmounted(() => {
       />
     </RouterLink>
 
-    <!-- MENU -->
     <nav>
       <ul class="menu">
 
-        <!-- INÍCIO -->
         <li>
           <RouterLink to="/" class="menu-link">
             Início
           </RouterLink>
         </li>
 
-        <!-- SOBRE NÓS -->
         <li>
           <RouterLink to="/aboutus" class="menu-link">
             Sobre Nós
@@ -53,7 +49,6 @@ onUnmounted(() => {
       </ul>
     </nav>
 
-    <!-- USUÁRIO -->
     <span
       class="mdi mdi-account-circle-outline usuario"
     ></span>
@@ -84,7 +79,6 @@ onUnmounted(() => {
   height: auto;
 }
 
-/* MENU */
 .menu {
   display: flex;
   align-items: center;
