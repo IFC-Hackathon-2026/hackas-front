@@ -1,3 +1,4 @@
+
 <script setup>
 defineProps({
   variant: {
@@ -16,7 +17,12 @@ defineProps({
 </script>
 
 <template>
-  <button :type="type" :disabled="disabled" class="app-button" :class="`app-button--${variant}`">
+  <button
+    :type="type"
+    :disabled="disabled"
+    class="app-button"
+    :class="`app-button--${variant}`"
+  >
     <slot />
   </button>
 </template>

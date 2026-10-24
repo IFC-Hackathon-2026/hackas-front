@@ -7,6 +7,7 @@ const props = defineProps({
     type: String,
     placeholder: String,
     required: Boolean,
+    icon: String,
 });
 
 const emit = defineEmits(['update:modelValue', 'focus', 'blur']);
@@ -29,13 +30,14 @@ const value = computed({
             <span v-if="required" class="required">*</span>
         </label>
         <div class="input-wrapper">
+        <span v-if="icon" class="input-icon mdi" :class="icon" aria-hidden="true"></span>
         <input
             v-model="value"
             :type="inputType"
             :placeholder="placeholder"
             :required="required"
             class="input-class"
-            :class="{ 'input-class--password': isPassword }"
+            :class="{ 'input-class--password': isPassword, 'input-class--icon': icon }"
             @focus="$emit('focus')"
             @blur="$emit('blur')"
         >
@@ -83,6 +85,28 @@ const value = computed({
 
 .input-class:hover {
     border-color: #5b7399;
+}
+
+.input-wrapper {
+    position: relative;
+}
+
+.input-icon {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 22px;
+    color: var(--primaria, #00265c);
+    pointer-events: none;
+}
+
+.input-class--icon {
+    padding-left: 42px;
+}
+
+.input-class--password {
+    padding-right: 2.75rem;
 }
 
 .input-class:focus {
