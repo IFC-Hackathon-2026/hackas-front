@@ -1,11 +1,18 @@
+
 <script setup>
 import { ref } from 'vue';
-import { useRouter, RouterLink } from 'vue-router';
+import { RouterLink, useRouter } from 'vue-router';
 import { useAuthStore } from '@/stores/auth';
 import AppButton from '@/components/forms/AppButton.vue';
+import appArrow from '../layout/appArrow.vue';
 
 const authStore = useAuthStore();
 const router = useRouter();
+
+const emit = defineEmits([
+  'ir-para-cadastro',
+  'login-sucesso'
+]);
 
 const email = ref('');
 const password = ref('');
@@ -13,24 +20,33 @@ const showPassword = ref(false);
 const loading = ref(false);
 const erroMessage = ref('');
 
+function voltarParaHome() {
+  router.push('/');
+}
+
 async function login() {
+  if (loading.value) return;
+
   loading.value = true;
   erroMessage.value = '';
+
   try {
     await authStore.login(email.value, password.value);
-    await router.replace({ name: 'eventos' });
+    emit('login-sucesso');
   } catch {
     erroMessage.value = 'Não foi possível entrar. Confira seus dados e tente novamente.';
   } finally {
     loading.value = false;
   }
 }
-
-const emit = defineEmits(['ir-para-cadastro']);
 </script>
 
 <template>
   <div class="container">
+    <div class="back-button">
+      <appArrow @back="voltarParaHome" />
+    </div>
+
     <div class="container-title">
       <img class="logo" src="/FarolFlow-logo-light.svg" alt="Logo" />
       <h1>BEM VINDO DE VOLTA!</h1>
@@ -61,35 +77,60 @@ const emit = defineEmits(['ir-para-cadastro']);
             autocomplete="current-password"
             required
           />
+
           <button
             type="button"
             class="toggle-password"
             :aria-label="showPassword ? 'Ocultar senha' : 'Mostrar senha'"
             @click="showPassword = !showPassword"
           >
-            <svg v-if="!showPassword" width="26" height="26" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M12 5C6.5 5 2.1 8.4 1 12c1.1 3.6 5.5 7 11 7s9.9-3.4 11-7c-1.1-3.6-5.5-7-11-7Zm0 11.5a4.5 4.5 0 1 1 0-9 4.5 4.5 0 0 1 0 9Zm0-7a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5Z"/>
+            <svg
+              v-if="!showPassword"
+              width="26"
+              height="26"
+              viewBox="0 0 24 24"
+              fill="currentColor"
+            >
+              <path d="M12 5C6.5 5 2.1 8.4 1 12c1.1 3.6 5.5 7 11 7s9.9-3.4 11-7c-1.1-3.6-5.5-7-11-7Zm0 11.5a4.5 4.5 0 1 1 0-9 4.5 4.5 0 0 1 0 9Zm0-7a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5Z" />
             </svg>
-            <svg v-else width="26" height="26" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M12 5C6.5 5 2.1 8.4 1 12c1.1 3.6 5.5 7 11 7s9.9-3.4 11-7c-1.1-3.6-5.5-7-11-7Zm0 11.5a4.5 4.5 0 1 1 0-9 4.5 4.5 0 0 1 0 9Z"/>
-              <path d="M3 3l18 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+
+            <svg
+              v-else
+              width="26"
+              height="26"
+              viewBox="0 0 24 24"
+              fill="currentColor"
+            >
+              <path d="M12 5C6.5 5 2.1 8.4 1 12c1.1-3.6 5.5-7 11-7c-1.1-3.6-5.5-7-11-7Zm0 11.5a4.5 4.5 0 1 0 0-9 4.5 4.5 0 0 0 0 9Z" />
+              <path
+                d="M3 3l18 18"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+              />
             </svg>
           </button>
         </div>
       </div>
 
-      <p v-if="erroMessage" class="error">{{ erroMessage }}</p>
+      <p v-if="erroMessage" class="error">
+        {{ erroMessage }}
+      </p>
 
       <AppButton type="submit" :disabled="loading" class="btn-entrar">
         {{ loading ? 'Entrando...' : 'Entrar' }}
       </AppButton>
 
-      <RouterLink to="/esqueci-senha" class="forgot">Esqueceu sua senha?</RouterLink>
+      <RouterLink to="/esqueci-senha" class="forgot">
+        Esqueceu sua senha?
+      </RouterLink>
     </form>
 
     <p class="signup">
       Não possui uma conta?
-       <a href="#" @click.prevent="emit('ir-para-cadastro')">Cadastre-se.</a>
+      <a href="#" @click.prevent="emit('ir-para-cadastro')">
+        Cadastre-se.
+      </a>
     </p>
   </div>
 </template>
@@ -98,6 +139,7 @@ const emit = defineEmits(['ir-para-cadastro']);
 .container {
   --azul: var(--primaria, #00265c);
 
+  position: relative;
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -108,6 +150,35 @@ const emit = defineEmits(['ir-para-cadastro']);
   min-height: 100dvh;
   padding: 1.25rem 0;
   box-sizing: border-box;
+}
+
+.back-button {
+  align-self: flex-start;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  margin-left: -15px;
+  margin-bottom: 0.5rem;
+  background: none;
+  border: none;
+  padding: 0;
+  color: #111;
+  cursor: pointer;
+  transition: color 0.3s ease, transform 0.3s ease;
+}
+
+.back-button :deep(.arrow) {
+  display: flex;
+  align-items: center;
+  line-height: 1;
+  color: inherit;
+}
+
+.back-button:hover {
+  color: var(--azul);
+  transform: translateX(-3px);
 }
 
 .container-title {
@@ -197,16 +268,17 @@ const emit = defineEmits(['ir-para-cadastro']);
   margin: 0 0 1rem;
 }
 
-
 .forgot {
   align-self: center;
   margin-top: 1.25rem;
   color: var(--azul);
   text-decoration: none;
 }
-.btn-entrar{
-    margin-top: 10px;
+
+.btn-entrar {
+  margin-top: 10px;
 }
+
 .signup {
   text-align: center;
   margin-top: 1.5rem;
@@ -237,10 +309,6 @@ const emit = defineEmits(['ir-para-cadastro']);
   .logo {
     width: 160px;
     margin-bottom: 0.75rem;
-  }
-
-  .container-title {
-    margin-bottom: 1rem;
   }
 }
 </style>

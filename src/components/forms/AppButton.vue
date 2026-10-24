@@ -1,3 +1,4 @@
+
 <script setup>
 defineProps({
   variant: {
@@ -16,7 +17,12 @@ defineProps({
 </script>
 
 <template>
-  <button :type="type" :disabled="disabled" class="app-button" :class="`app-button--${variant}`">
+  <button
+    :type="type"
+    :disabled="disabled"
+    class="app-button"
+    :class="`app-button--${variant}`"
+  >
     <slot />
   </button>
 </template>
@@ -71,4 +77,22 @@ defineProps({
   opacity: 0.7;
   cursor: not-allowed;
 }
+
+.app-button--secondary {
+  background: #f6f6f2 !important;
+  color: #01295f !important;
+  border-color: #01295f !important;
+}
+
+.app-button--secondary::before {
+  background: #01295f;
+}
+
+.app-button--secondary:hover:not(:disabled),
+.app-button--secondary:focus-visible:not(:disabled),
+.app-button--secondary:active:not(:disabled) {
+  color: #ffffff !important;
+  border-color: #01295f !important;
+}
+
 </style>

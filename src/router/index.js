@@ -1,3 +1,4 @@
+
 import { createRouter, createWebHistory } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import HomeView from '../views/HomeView.vue'
@@ -10,6 +11,7 @@ const router = createRouter({
       path: '/',
       name: 'home',
       component: HomeView,
+      meta: { guestOnly: true },
     },
     {
       path: '/eventos',
@@ -21,7 +23,11 @@ const router = createRouter({
       path: '/login',
       name: 'login',
       component: () => import('../views/LoginView.vue'),
-      meta: { guestOnly: true, hideHeader: true, hideFooter: true },
+      meta: {
+        guestOnly: true,
+        hideHeader: true,
+        hideFooter: true,
+      },
     },
     {
       path: '/cadastro',
@@ -32,15 +38,34 @@ const router = createRouter({
   ],
 })
 
+function obterDestino(redirect) {
+  if (
+    typeof redirect === 'string' &&
+    redirect.startsWith('/') &&
+    !redirect.startsWith('//') &&
+    !redirect.startsWith('/\\') &&
+    redirect !== '/login' &&
+    redirect !== '/cadastro' &&
+    redirect !== '/'
+  ) {
+    return redirect
+  }
+
+  return '/eventos'
+}
+
 router.beforeEach((to) => {
   const authStore = useAuthStore()
 
   if (to.meta.requiresAuth && !authStore.isAuthenticated) {
-    return { name: 'login' }
+    return {
+      name: 'login',
+      query: { redirect: to.fullPath },
+    }
   }
 
   if (to.meta.guestOnly && authStore.isAuthenticated) {
-    return { name: 'eventos' }
+    return obterDestino(to.query.redirect)
   }
 })
 
