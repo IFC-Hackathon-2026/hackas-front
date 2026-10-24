@@ -1,13 +1,13 @@
 
 <script setup>
 import { reactive, ref } from 'vue';
-import { useAuthStore } from '@/stores/auth';
+import { useUserStore } from '@/stores/userStore';
 import appArrow from '../layout/appArrow.vue';
 import AppInput from '@/components/forms/AppInput.vue';
 import AppButton from '@/components/forms/AppButton.vue';
 import StepIndicator from '../layout/StepIndicator.vue';
 
-const authStore = useAuthStore();
+const userStore = useUserStore();
 
 const emit = defineEmits([
   'ir-para-login',
@@ -18,13 +18,13 @@ const user = reactive({
   email: '',
   password: '',
   name: null,
-  foto: null
-});
+  foto: null,
+})
 
-const confirmPassword = ref('');
+const confirmPassword = ref('')
 
-const loading = ref(false);
-const erroMessage = ref('');
+const loading = ref(false)
+const erroMessage = ref('')
 
 async function register() {
   if (loading.value) return;
@@ -32,14 +32,14 @@ async function register() {
   erroMessage.value = '';
 
   if (user.password !== confirmPassword.value) {
-    erroMessage.value = 'As senhas não coincidem.';
-    return;
+    erroMessage.value = 'As senhas não coincidem.'
+    return
   }
 
   loading.value = true;
 
   try {
-    await authStore.register(
+    await userStore.register(
       user.email,
       user.password,
       user.name,
@@ -48,9 +48,9 @@ async function register() {
 
     emit('cadastro-sucesso');
   } catch {
-    erroMessage.value = 'Não foi possível fazer o cadastro. Tente novamente.';
+    erroMessage.value = 'Não foi possível fazer o cadastro. Tente novamente.'
   } finally {
-    loading.value = false;
+    loading.value = false
   }
 }
 </script>
@@ -73,11 +73,7 @@ async function register() {
     </div>
 
     <form @submit.prevent="register" class="register-form">
-      <AppInput
-        label="Nome completo"
-        placeholder="Maria Silva"
-        v-model="user.name"
-      />
+      <AppInput label="Nome completo" placeholder="Maria Silva" v-model="user.name" />
 
       <AppInput
         label="E-mail"
@@ -147,7 +143,9 @@ async function register() {
   padding: 0;
   color: #111;
   cursor: pointer;
-  transition: color 0.3s ease, transform 0.3s ease;
+  transition:
+    color 0.3s ease,
+    transform 0.3s ease;
 }
 
 .back-button :deep(.arrow) {

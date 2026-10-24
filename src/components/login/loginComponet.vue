@@ -2,12 +2,12 @@
 <script setup>
 import { ref } from 'vue';
 import { RouterLink, useRouter } from 'vue-router';
-import { useAuthStore } from '@/stores/auth';
+import { useUserStore } from '@/stores/userStore';
 import AppButton from '@/components/forms/AppButton.vue';
 import appArrow from '../layout/appArrow.vue';
 
-const authStore = useAuthStore();
-const router = useRouter();
+const userStore = useUserStore()
+const router = useRouter()
 
 const emit = defineEmits([
   'ir-para-cadastro',
@@ -31,12 +31,12 @@ async function login() {
   erroMessage.value = '';
 
   try {
-    await authStore.login(email.value, password.value);
+    await userStore.login(email.value, password.value);
     emit('login-sucesso');
   } catch {
-    erroMessage.value = 'Não foi possível entrar. Confira seus dados e tente novamente.';
+    erroMessage.value = 'Não foi possível entrar. Confira seus dados e tente novamente.'
   } finally {
-    loading.value = false;
+    loading.value = false
   }
 }
 </script>

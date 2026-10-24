@@ -1,12 +1,17 @@
 
 import { createRouter, createWebHistory } from 'vue-router'
-import { useAuthStore } from '@/stores/auth'
+import { useUserStore } from '@/stores/userStore.js'
 import HomeView from '../views/HomeView.vue'
 import EventsView from '../views/EventsView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
+    {
+      path: '/p',
+      name: 'playground',
+      component: () => import('../views/playground.vue'),
+    },
     {
       path: '/',
       name: 'home',
@@ -55,16 +60,16 @@ function obterDestino(redirect) {
 }
 
 router.beforeEach((to) => {
-  const authStore = useAuthStore()
+  const userStore = useUserStore()
 
-  if (to.meta.requiresAuth && !authStore.isAuthenticated) {
+  if (to.meta.requiresAuth && !userStore.isAuthenticated) {
     return {
       name: 'login',
       query: { redirect: to.fullPath },
     }
   }
 
-  if (to.meta.guestOnly && authStore.isAuthenticated) {
+  if (to.meta.guestOnly && userStore.isAuthenticated) {
     return obterDestino(to.query.redirect)
   }
 })

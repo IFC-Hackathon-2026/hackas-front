@@ -1,11 +1,11 @@
 <script setup>
-import { RouterLink } from 'vue-router';
-import { useTemplateStore } from "@/store/template";
-import appButtonComponent from "@/components/forms/AppButton.vue";
-import { useAuthStore } from '@/stores/auth';
+import { RouterLink } from 'vue-router'
+import { useTemplateStore } from '@/store/template'
+import appButtonComponent from '@/components/forms/AppButton.vue'
+import { useUserStore } from '@/stores/userStore'
 
-const templateStore = useTemplateStore();
-const authStore = useAuthStore();
+const templateStore = useTemplateStore()
+const userStore = useUserStore()
 </script>
 
 <template>
@@ -30,7 +30,7 @@ const authStore = useAuthStore();
         <span class="mdi mdi-play-box-multiple"></span> Tutoriais
       </RouterLink>
 
-      <RouterLink v-if="authStore.user?.tipo == 'professor'" to="/teacher" class="nav-link">
+      <RouterLink v-if="userStore.user?.tipo == 'professor'" to="/teacher" class="nav-link">
         <span class="mdi mdi-account-tie"></span> Professor
       </RouterLink>
 
@@ -51,10 +51,7 @@ const authStore = useAuthStore();
         <label for="dark-mode" class="toggle-label"></label>
       </div>
       <div class="close-side">
-        <appButtonComponent
-          label="Fechar"
-          @click="templateStore.sidebar = false"
-        />
+        <appButtonComponent label="Fechar" @click="templateStore.sidebar = false" />
       </div>
     </div>
   </aside>

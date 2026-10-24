@@ -2,9 +2,9 @@
 <script setup>
 import { onMounted, onUnmounted, ref } from 'vue'
 import { RouterLink } from 'vue-router'
-import { useAuthStore } from '@/stores/auth'
+import { useUserStore } from '@/stores/userStore'
 
-const authStore = useAuthStore()
+const userStore = useUserStore()
 const isScrolled = ref(false)
 
 function updateScroll() {
@@ -30,7 +30,7 @@ onUnmounted(() => {
     />
 
     <RouterLink
-      v-if="!authStore.isAuthenticated"
+      v-if="!userStore.isAuthenticated"
       to="/login"
       class="botao-entrar"
     >
