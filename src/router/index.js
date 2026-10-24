@@ -1,6 +1,8 @@
+
 import { createRouter, createWebHistory } from 'vue-router'
 import { useUserStore } from '@/stores/userStore.js'
 import HomeView from '../views/HomeView.vue'
+import EventsView from '../views/EventsView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -14,13 +16,23 @@ const router = createRouter({
       path: '/',
       name: 'home',
       component: HomeView,
+      meta: { guestOnly: true },
+    },
+    {
+      path: '/eventos',
+      name: 'eventos',
+      component: EventsView,
       meta: { requiresAuth: true },
     },
     {
       path: '/login',
       name: 'login',
       component: () => import('../views/LoginView.vue'),
-      meta: { guestOnly: true, hideHeader: true, hideFooter: true },
+      meta: {
+        guestOnly: true,
+        hideHeader: true,
+        hideFooter: true,
+      },
     },
     {
       path: '/cadastro',
@@ -40,18 +52,42 @@ const router = createRouter({
       meta: { requiresAuth: true },
       component: () => import('../components/atalhos/princiapalconfigComponent.vue')
     },
+      path: '/perfil',
+      name: 'perfil',
+      component: () => import('../views/PerfilView.vue'),
+      meta: { requiresAuth: true },
+    }
   ],
 })
+
+function obterDestino(redirect) {
+  if (
+    typeof redirect === 'string' &&
+    redirect.startsWith('/') &&
+    !redirect.startsWith('//') &&
+    !redirect.startsWith('/\\') &&
+    redirect !== '/login' &&
+    redirect !== '/cadastro' &&
+    redirect !== '/'
+  ) {
+    return redirect
+  }
+
+  return '/eventos'
+}
 
 router.beforeEach((to) => {
   const userStore = useUserStore()
 
   if (to.meta.requiresAuth && !userStore.isAuthenticated) {
-    return { name: 'login' }
+    return {
+      name: 'login',
+      query: { redirect: to.fullPath },
+    }
   }
 
   if (to.meta.guestOnly && userStore.isAuthenticated) {
-    return { name: 'home' }
+    return obterDestino(to.query.redirect)
   }
 })
 

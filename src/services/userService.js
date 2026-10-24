@@ -17,8 +17,8 @@ export default class UserService {
     return api.patch('/usuarios/me/', data)
   }
 
-  async getAllUsers() {
-    return api.get('/usuarios/')
+  async getAllUsers(params = {}) {
+    return api.get('/usuarios/', { params })
   }
 
   async getUser(id) {

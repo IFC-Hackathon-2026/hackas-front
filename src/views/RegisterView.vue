@@ -30,7 +30,7 @@ async function register() {
   loading.value = true
   try {
     await userStore.register(user.email, user.password, user.name, user.foto)
-    await router.replace({ name: 'home' })
+    await router.replace({ name: 'eventos' })
   } catch {
     erroMessage.value = 'Não foi possível fazer o cadastro. Tente novamente.'
   } finally {
@@ -73,6 +73,15 @@ async function register() {
         required
       />
 
+      <label class="photo-field">
+        Foto do perfil (opcional)
+        <input
+          type="file"
+          accept="image/jpeg,image/png"
+          @change="user.foto = $event.target.files?.[0] ?? null"
+        />
+      </label>
+
       <p v-if="erroMessage" role="alert" style="color: red; margin-bottom: 1rem">
         {{ erroMessage }}
       </p>
@@ -85,6 +94,15 @@ async function register() {
 </template>
 
 <style scoped>
+.photo-field {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+.photo-field input {
+  max-width: 100%;
+}
+
 .container {
   display: flex;
   flex-direction: column;
