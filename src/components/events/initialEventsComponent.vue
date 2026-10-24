@@ -91,13 +91,13 @@ onBeforeUnmount(() => window.clearTimeout(buscaTimer))
               Limpar seleção
             </button>
             <div v-for="categoria in categoriasFiltradas" :key="categoria.value" class="category-group">
-              <label class="category-option category-option--group" :style="{ backgroundColor: categoria.color }">
+              <label class="category-option category-option--group" :style="{ color: categoria.textColor || categoria.color }">
                 <input v-model="categoriasSelecionadas" type="checkbox" :value="categoria.value" />
                 <span>{{ categoria.label }}</span>
               </label>
               <div v-if="categoria.children.length" class="category-children">
                 <div v-for="subcategoria in categoria.children" :key="subcategoria.value">
-                  <label class="category-option" :style="subcategoria.color ? { backgroundColor: subcategoria.color } : null">
+                  <label class="category-option">
                     <input v-model="categoriasSelecionadas" type="checkbox" :value="subcategoria.value" />
                     <span>{{ subcategoria.label }}</span>
                   </label>
@@ -198,6 +198,8 @@ onBeforeUnmount(() => window.clearTimeout(buscaTimer))
 
 .category-filter {
   position: relative;
+  width: 320px;
+  max-width: 100%;
 }
 
 .category-filter summary {
@@ -230,7 +232,11 @@ onBeforeUnmount(() => window.clearTimeout(buscaTimer))
   top: 100%;
   right: 0;
   z-index: 5;
-  width: 100%;
+  width: 320px;
+  max-width: 100%;
+  max-height: min(480px, 65dvh);
+  overflow-y: auto;
+  overflow-x: hidden;
   padding: 1rem;
   background: #fff;
   border-radius: 6px;
@@ -256,6 +262,12 @@ onBeforeUnmount(() => window.clearTimeout(buscaTimer))
   padding-block: 0.375rem;
   font-size: 0.9375rem;
   cursor: pointer;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.category-option span {
+  min-width: 0;
 }
 
 .category-option--group {

@@ -3,6 +3,7 @@ export const PROJECT_CATEGORIES = [
     value: 'educacionais_profissionais',
     label: 'Educacionais e Profissionais',
     color: '#DCEFE1',
+    textColor: '#267342',
     selectable: false,
     children: [
       {
@@ -25,6 +26,7 @@ export const PROJECT_CATEGORIES = [
     value: 'culturais_artisticos',
     label: 'Culturais e Artísticos',
     color: '#EBDCF5',
+    textColor: '#793AA3',
     children: [
       { value: 'culturais', label: 'Culturais', children: [] },
       { value: 'artisticos', label: 'Artísticos', children: [] },
@@ -35,6 +37,7 @@ export const PROJECT_CATEGORIES = [
     value: 'esportivos_competitivos',
     label: 'Esportivos e Competitivos',
     color: '#F9E2CE',
+    textColor: '#A55315',
     children: [
       { value: 'esportivos', label: 'Esportivos', children: [] },
       { value: 'competitivos', label: 'Competitivos', children: [] },
@@ -44,6 +47,7 @@ export const PROJECT_CATEGORIES = [
     value: 'sociais_recreativos',
     label: 'Sociais e Recreativos',
     color: '#F8DDE7',
+    textColor: '#AD3465',
     children: [
       { value: 'sociais', label: 'Sociais', children: [] },
       { value: 'recreativos', label: 'Recreativos', children: [] },
@@ -54,6 +58,7 @@ export const PROJECT_CATEGORIES = [
     value: 'politicos_religiosos',
     label: 'Políticos e Religiosos',
     color: '#F5EBCB',
+    textColor: '#876715',
     children: [
       { value: 'politicos', label: 'Políticos', children: [] },
       { value: 'diplomaticos', label: 'Diplomáticos', children: [] },
