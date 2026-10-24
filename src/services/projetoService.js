@@ -18,6 +18,10 @@ export default class ProjetoService {
     return api.get(`/projetos/${id}/`)
   }
 
+  removeParticipante(projetoId, participacaoId) {
+    return api.delete(`/projetos/${projetoId}/participantes/${participacaoId}/`)
+  }
+
   createProjeto(data) {
     return api.post('/projetos/', projetoPayload(data))
   }

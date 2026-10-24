@@ -47,6 +47,17 @@ const router = createRouter({
       meta: { guestOnly: true },
     },
     {
+      path: '/dashboard/:id',
+      name: 'dashboard',
+      meta: { requiresAuth: true },
+      component: () => import('../components/layout/atalhosEventoComponent.vue'),
+    },
+    {
+      path: '/config/:id?',
+      name: 'config',
+      meta: { requiresAuth: true },
+      component: () => import('../components/atalhos/princiapalconfigComponent.vue')
+    },
       path: '/perfil',
       name: 'perfil',
       component: () => import('../views/PerfilView.vue'),

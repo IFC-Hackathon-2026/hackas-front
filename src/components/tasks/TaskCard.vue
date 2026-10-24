@@ -21,7 +21,12 @@ function formatarData(data) {
 <template>
   <div class="list-container">
     <div class="task-card" :class="{ 'task-card-atrasada': props.atrasada && !props.concluidoEm }">
-      <span class="mdi mdi-drag-vertical" style="font-size: 1.3rem; color: #9a9a9a;" />
+      <span
+        class="mdi mdi-drag-vertical task-drag-handle"
+        title="Arraste para mover a tarefa"
+        aria-hidden="true"
+        @click.stop
+      />
       <div class="container">
         <div class="date-area">
           <span class="mdi mdi-calendar-outline" />{{ props.startDate }}
@@ -59,6 +64,17 @@ function formatarData(data) {
 <style scoped>
 .container {
   min-width: 0;
+}
+
+.task-drag-handle {
+  font-size: 1.3rem;
+  color: #9a9a9a;
+  cursor: grab;
+  touch-action: none;
+}
+
+.task-drag-handle:active {
+  cursor: grabbing;
 }
 
 .task-title {
