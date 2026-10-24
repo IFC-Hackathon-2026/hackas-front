@@ -308,4 +308,102 @@ async function register() {
     margin-bottom: 1rem;
   }
 }
+
+@media (max-width: 600px) {
+  .container {
+    width: 100%;
+    min-width: 0;
+    justify-content: flex-start;
+    padding-top: max(1rem, env(safe-area-inset-top, 0px));
+    padding-bottom: max(1.5rem, env(safe-area-inset-bottom, 0px));
+  }
+
+  .back-button {
+    flex-shrink: 0;
+    margin-left: 0;
+    margin-bottom: 1rem;
+  }
+
+  .container-title {
+    width: 100%;
+    margin-bottom: 1.5rem;
+  }
+
+  .logo {
+    width: clamp(140px, 42vw, 170px);
+    margin-bottom: 1rem;
+  }
+
+  .container-title h1 {
+    font-size: clamp(1.25rem, 5.5vw, 1.65rem);
+    line-height: 1.3;
+  }
+
+  .container-title p {
+    font-size: 0.875rem;
+    line-height: 1.5;
+  }
+
+  .error {
+    font-size: 0.875rem;
+    overflow-wrap: anywhere;
+  }
+
+  .register-form {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .register-form :deep(.app-input) {
+    margin-bottom: 1rem;
+  }
+
+  .register-form :deep(.label-class),
+  .photo-field {
+    font-size: 0.9375rem;
+  }
+
+  .register-form :deep(.input-class) {
+    min-width: 0;
+    min-height: 48px;
+    font-size: 16px;
+  }
+
+  .register-form :deep(.password-toggle) {
+    min-width: 44px;
+    min-height: 44px;
+  }
+
+  .photo-field,
+  .photo-field input {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .photo-field input {
+    font-size: 16px;
+  }
+
+  .photo-field input::file-selector-button {
+    min-height: 44px;
+    max-width: 100%;
+    margin-right: 0.5rem;
+    padding: 0.5rem;
+    font: inherit;
+  }
+
+  .register-form :deep(.app-button) {
+    width: 100%;
+    min-height: 48px;
+    margin-block: 0.5rem 0;
+    font-size: 1rem;
+  }
+
+  .container > :deep(.step-indicator) {
+    width: 100%;
+    margin-top: 1.5rem;
+    gap: 0.5rem;
+  }
+}
+
 </style>

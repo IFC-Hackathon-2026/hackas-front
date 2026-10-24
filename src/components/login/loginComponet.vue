@@ -317,4 +317,106 @@ async function login() {
     margin-bottom: 0.75rem;
   }
 }
+
+@media (max-width: 600px) {
+  .container {
+    width: 100%;
+    min-width: 0;
+    justify-content: flex-start;
+    padding-top: max(1rem, env(safe-area-inset-top, 0px));
+    padding-bottom: max(1.5rem, env(safe-area-inset-bottom, 0px));
+  }
+
+  .back-button {
+    flex-shrink: 0;
+    margin-left: 0;
+    margin-bottom: 1rem;
+  }
+
+  .container-title {
+    width: 100%;
+    margin-bottom: 1.5rem;
+  }
+
+  .logo {
+    width: clamp(140px, 42vw, 170px);
+    margin-bottom: 1rem;
+  }
+
+  .container-title h1 {
+    font-size: clamp(1.25rem, 5.5vw, 1.65rem);
+    line-height: 1.3;
+  }
+
+  .container-title p {
+    font-size: 0.875rem;
+    line-height: 1.5;
+  }
+
+  .error {
+    font-size: 0.875rem;
+    overflow-wrap: anywhere;
+  }
+
+  .login-form,
+  .field,
+  .password-wrapper {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .field label {
+    font-size: 0.9375rem;
+  }
+
+  .field input {
+    min-width: 0;
+    min-height: 48px;
+    padding-inline: 1rem;
+    font-size: 16px;
+  }
+
+  .password-wrapper input {
+    padding-right: 3.5rem;
+  }
+
+  .toggle-password {
+    right: 0.25rem;
+    width: 44px;
+    height: 44px;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .login-form :deep(.app-button) {
+    width: 100%;
+    min-height: 48px;
+    font-size: 1rem;
+  }
+
+  .forgot,
+  .signup a {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 44px;
+  }
+
+  .forgot {
+    margin-top: 0.75rem;
+    font-size: 0.875rem;
+  }
+
+  .signup {
+    margin-top: 1rem;
+    font-size: 0.875rem;
+  }
+}
+
+
+@media (max-width: 600px) {
+  .logo {
+    width: clamp(110px, 32vw, 132px);
+  }
+}
 </style>
