@@ -55,8 +55,12 @@ defineProps({
   overflow: hidden;
   z-index: 0;
   width: 100%;
-  height: 50px;
+  height: 45px;
   flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
   background: var(--button-background) !important;
   color: var(--button-text) !important;
   font-size: 1.25rem;
@@ -70,7 +74,8 @@ defineProps({
 .app-button::before {
   content: '';
   position: absolute;
-  inset: 0;
+  inset: -2px;
+  border-radius: inherit;
   background: var(--button-hover-background);
   transform: scaleX(0);
   transform-origin: left;

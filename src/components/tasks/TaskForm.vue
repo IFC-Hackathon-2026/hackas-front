@@ -7,6 +7,7 @@ import { useUserStore } from '@/stores/userStore'
 import { useProjetoStore } from '@/stores/projetoStore'
 import AppInput from '../forms/AppInput.vue'
 import AppButton from '../forms/AppButton.vue'
+import AppConfirmModal from '../modais/AppConfirmModal.vue'
 import { apiErrorMessage } from '@/utils/apiErrorMessage'
 import TaskCategoryField from './fields/TaskCategoryField.vue'
 import TaskAssigneeField from './fields/TaskAssigneeField.vue'
@@ -19,6 +20,7 @@ const statusStore = useStatusStore()
 const editing = computed(() => Boolean(tarefaStore.tarefa.id))
 const deleting = ref(false)
 const confirmingDelete = ref(false)
+const erroExclusao = ref('')
 const originalDeadline = tarefaStore.tarefa.prazo
 const deadlineDate = (value) => {
   if (!value) return ''
@@ -116,15 +118,21 @@ async function saveTarefa() {
     loading.value = false
   }
 }
+function confirmarExclusao() {
+  erroExclusao.value = ''
+  confirmingDelete.value = true
+}
+
 async function deleteTarefa() {
-  if (loading.value || deleting.value || !editing.value) return
+  if (loading.value || deleting.value || !editing.value || !confirmingDelete.value) return
   deleting.value = true
-  errorMsg.value = ''
+  erroExclusao.value = ''
   try {
     await tarefaStore.deleteTarefa(tarefaStore.tarefa.id, tarefaStore.tarefa.projeto)
+    confirmingDelete.value = false
     emit('deleted')
   } catch (error) {
-    errorMsg.value = apiErrorMessage(error, 'Não foi possível excluir. Tente novamente.')
+    erroExclusao.value = apiErrorMessage(error, 'Não foi possível excluir. Tente novamente.')
   } finally {
     deleting.value = false
   }
@@ -181,25 +189,21 @@ async function deleteTarefa() {
       <AppButton type="submit" :disabled="Boolean(optionsError) || (editing && !temAlteracoes)">{{
         loading ? 'Salvando…' : editing ? 'Salvar alterações' : 'Adicionar tarefa'
       }}</AppButton>
-      <template v-if="editing">
-        <AppButton
-          v-if="!confirmingDelete"
-          type="button"
-          variant="danger"
-          @click="confirmingDelete = true"
-        >
-          Excluir tarefa
-        </AppButton>
-        <div v-else role="group" aria-label="Confirmar exclusão">
-          <p>Excluir esta tarefa? Esta ação não pode ser desfeita.</p>
-          <AppButton type="button" variant="danger" @click="deleteTarefa">
-            {{ deleting ? 'Excluindo…' : 'Confirmar exclusão' }}
-          </AppButton>
-          <button type="button" @click="confirmingDelete = false">Cancelar</button>
-        </div>
-      </template>
+      <AppButton v-if="editing" type="button" variant="danger" @click="confirmarExclusao">
+        Excluir tarefa
+      </AppButton>
     </fieldset>
   </form>
+  <AppConfirmModal
+    v-model:visible="confirmingDelete"
+    titulo="Excluir tarefa"
+    :mensagem="'Tem certeza de que deseja excluir a tarefa “' + tarefaStore.tarefa.titulo + '”?'"
+    :carregando="deleting"
+    :erro="erroExclusao"
+    @confirmar="deleteTarefa"
+  >
+    <p>Esta ação não pode ser desfeita.</p>
+  </AppConfirmModal>
 </template>
 
 <style scoped>
