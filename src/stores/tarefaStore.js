@@ -71,6 +71,7 @@ export const useTarefaStore = defineStore('tarefa', () => {
   let version = 0
 
   const loading = computed(() => pending.value > 0)
+
   const porStatus = computed(() =>
     tarefas.value.reduce((grupos, tarefa) => {
       const statusId = tarefa.status?.id ?? tarefa.status
@@ -248,5 +249,6 @@ export const useTarefaStore = defineStore('tarefa', () => {
     deleteTarefa,
     reset,
     resetTarefa,
+
   }
 })
