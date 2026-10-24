@@ -30,6 +30,16 @@ const router = createRouter({
       meta: { requiresAuth: true },
       children: [
         {
+          path: 'kanban',
+          name: 'kanban',
+          component: () => import('../components/atalhos/kanbanComponent.vue'),
+        },
+        {
+          path: 'documentos',
+          name: 'documentos',
+          component: () => import('../components/atalhos/documentosComponent.vue'),
+        },
+        {
           path: 'dashboard',
           name: 'dashboard',
           component: () => import('../components/atalhos/dashboardComponent.vue'),

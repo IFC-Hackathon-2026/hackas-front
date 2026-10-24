@@ -15,11 +15,14 @@ import KanbanColumnForm from './KanbanColumnForm.vue'
 import { apiErrorMessage } from '@/utils/apiErrorMessage'
 import { MINIMO_COLUNAS, MAXIMO_COLUNAS } from '@/constants/kanban'
 
+const props = defineProps({
+  projetoId: { type: [String, Number], default: null },
+})
 const projetoStore = useProjetoStore()
 const tarefaStore = useTarefaStore()
 const statusStore = useStatusStore()
 const categoriaStore = useCategoriaStore()
-const selectedProject = ref(projetoStore.projetoAtual?.id ?? '')
+const selectedProject = ref(props.projetoId ?? projetoStore.projetoAtual?.id ?? '')
 const showModal = ref(false)
 const openingTask = ref(false)
 const arrastandoTarefa = ref(false)
@@ -160,7 +163,8 @@ async function loadProjects() {
     loading.value = false
   }
 }
-onMounted(loadProjects)
+onMounted(() => props.projetoId != null ? loadProject() : loadProjects())
+onUnmounted(() => { request++ })
 function newTask(statusId) {
   if (movendoTarefa.value || arrastandoTarefa.value) return
   if (loading.value || openingTask.value || tarefaStore.loading || !selectedProject.value) return
@@ -309,7 +313,7 @@ async function excluirColuna() {
     <div class="section-header">
       <h2>Kanban</h2>
       <p>Organize tarefas, defina prioridades e acompanhe o progresso do projeto.</p>
-      <label class="project-select"
+      <label v-if="props.projetoId == null" class="project-select"
         >Projeto
         <select
           v-model="selectedProject"

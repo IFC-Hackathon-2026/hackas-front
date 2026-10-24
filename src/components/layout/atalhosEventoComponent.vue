@@ -13,10 +13,20 @@ const podeVerConfiguracoes = computed(() => equipeId.value &&
 <template>
   <nav class="event-navigation" aria-label="Navegação da equipe">
     <ul>
-      <li><span class="mdi mdi-view-grid-outline" aria-hidden="true"></span> Kanban</li>
-      <li><span class="mdi mdi-file-document-multiple-outline" aria-hidden="true"></span> Documentos</li>
       <li>
-        <RouterLink v-if="equipeId" :to="{ name: 'dashboard', params: { id: equipeId } }" :class="{ active: route.name === 'detailsEventsView' }" active-class="active">
+        <RouterLink v-if="equipeId" :to="{ name: 'kanban', params: { id: equipeId } }" :class="{ active: route.name === 'detailsEventsView' }" active-class="active">
+          <span class="mdi mdi-view-grid-outline" aria-hidden="true"></span> Kanban
+        </RouterLink>
+        <span v-else>Kanban</span>
+      </li>
+      <li>
+        <RouterLink v-if="equipeId" :to="{ name: 'documentos', params: { id: equipeId } }" active-class="active">
+          <span class="mdi mdi-file-document-multiple-outline" aria-hidden="true"></span> Documentos
+        </RouterLink>
+        <span v-else>Documentos</span>
+      </li>
+      <li>
+        <RouterLink v-if="equipeId" :to="{ name: 'dashboard', params: { id: equipeId } }" active-class="active">
           <span class="mdi mdi-information-outline" aria-hidden="true"></span> Dashboard
         </RouterLink>
         <span v-else>Dashboard</span>

@@ -1,6 +1,6 @@
 <script setup>
 import { RouterView, useRoute } from 'vue-router'
-import DashboardComponent from '@/components/atalhos/dashboardComponent.vue'
+import KanbanComponent from '@/components/atalhos/kanbanComponent.vue'
 import DetailsEventsComponent from '@/components/events/detailsEventsComponent.vue'
 import atalhosEventoComponent from '@/components/layout/atalhosEventoComponent.vue'
 
@@ -14,7 +14,7 @@ const route = useRoute()
   <h2 id="event-tasks-title">TAREFAS</h2>
   <atalhosEventoComponent/>
   <RouterView v-slot="{ Component }">
-    <component :is="Component || DashboardComponent" />
+    <component :is="Component || KanbanComponent" />
   </RouterView>
   </section>
   </div>
