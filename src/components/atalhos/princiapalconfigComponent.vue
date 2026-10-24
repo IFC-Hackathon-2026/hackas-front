@@ -4,7 +4,6 @@ import { useRoute, useRouter } from 'vue-router'
 import ParticipantesComponent from './participantesComponent.vue'
 import SolicitacoesComponent from './solicitacaoesComponent.vue'
 import { useProjetoStore } from '@/stores/projetoStore'
-import atalhosEventoComponent from '../layout/atalhosEventoComponent.vue'
 
 
 const projetoStore = useProjetoStore()
@@ -62,11 +61,9 @@ async function excluirEquipe() {
 
 <template>
 
-  <atalhosEventoComponent/>
-
   <p v-if="carregando" role="status">Verificando permissão da equipe...</p>
   <p v-else-if="erro" role="alert">{{ erro }}</p>
-  <p v-else-if="!equipeId" role="status">Abra esta página com o ID da equipe, por exemplo /config/3.</p>
+  <p v-else-if="!equipeId" role="status">Selecione uma equipe para acessar suas configurações.</p>
   <p v-else-if="!podeVerConfiguracoes" role="status">As configurações estão disponíveis apenas para o fundador e os organizadores desta equipe.</p>
   <div v-else class="config">
     <aside class="sidebar">
@@ -121,7 +118,8 @@ async function excluirEquipe() {
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
-  max-width: 1320px;
+  width: 100%;
+  max-width: 100%;
   margin: 64px auto 40px;
   padding: 0;
   color: var(--azul);
@@ -168,7 +166,6 @@ async function excluirEquipe() {
   border: 0;
   background: transparent;
   color: var(--azul);
-  font-size: 1.3rem;
   font-weight: 700;
   cursor: pointer;
 }

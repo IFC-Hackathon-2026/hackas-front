@@ -8,7 +8,7 @@ const route = useRoute()
 </script>
 
 <template>
-  <div class="app-layout" :class="{ 'config-layout': ['config', 'dashboard'].includes(route.name) }">
+  <div class="app-layout" :class="{ 'config-layout': ['detailsEventsView', 'config', 'dashboard'].includes(route.name) }">
     <AppHeaderComponent v-if="!route.meta.hideHeader" />
 
     <main class="app-content">
