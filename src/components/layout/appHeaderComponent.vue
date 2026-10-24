@@ -135,18 +135,21 @@ onUnmounted(() => {
   text-decoration: none;
   font-size: 16px;
   font-weight: 600;
-  padding: 10px 16px;
-  border-radius: 8px;
-  transition: background-color 0.2s;
+  padding: 10px 0;
+  border-radius: 0;
+  background: transparent;
+  transition: color 0.2s ease;
 }
 
 .menu-link:hover {
-  background-color: #e8f0fa;
+  background: transparent;
+  color: #174b83;
 }
 
 .menu-link.router-link-exact-active {
   color: #174b83;
   border-bottom: 2px solid #2767aa;
+  background: transparent;
 }
 
 .user-avatar {

@@ -254,6 +254,7 @@ const props = defineProps({
   gap: 1rem;
   margin-top: 1rem;
   scrollbar-gutter: stable;
+  touch-action: pan-y;
 }
 
 .columns-list {
@@ -263,8 +264,12 @@ const props = defineProps({
   grid-template-columns: repeat(var(--column-count), minmax(17rem, 1fr));
   grid-template-rows: minmax(0, 1fr);
   overflow-x: auto;
+  overflow-y: hidden;
+  overscroll-behavior-x: contain;
+  -webkit-overflow-scrolling: touch;
   gap: 1rem;
   padding-inline: 0;
+  touch-action: pan-x;
 }
 
 .kanban-column {

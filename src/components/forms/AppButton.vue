@@ -55,7 +55,13 @@ defineProps({
   overflow: hidden;
   z-index: 0;
   width: 100%;
-  height: 50px;
+  min-height: 40px;
+  height: auto;
+  max-width: 100%;
+  padding: 0.5rem 0.875rem;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  line-height: 1.4;
   flex-shrink: 0;
   display: inline-flex;
   align-items: center;
@@ -63,8 +69,8 @@ defineProps({
   gap: 0.5rem;
   background: var(--button-background) !important;
   color: var(--button-text) !important;
-  font-size: 1.25rem;
-  font-weight: 700;
+  font-size: 0.9375rem;
+  font-weight: 600;
   border: 2px solid var(--button-border, var(--primaria, #01295f)) !important;
   border-radius: 6px;
   cursor: pointer;
@@ -103,6 +109,11 @@ defineProps({
 .app-button:disabled {
   opacity: 0.7;
   cursor: not-allowed;
+}
+
+
+@media (pointer: coarse) {
+  .app-button { min-height: 44px; }
 }
 
 </style>

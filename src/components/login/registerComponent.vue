@@ -612,6 +612,21 @@ async function register() {
     font-size: 1rem;
   }
 
+  .photo-content {
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+  }
+
+  .photo-actions {
+    align-items: center;
+    text-align: center;
+  }
+
+  .photo-button {
+    justify-self: center;
+  }
+
   .container > :deep(.step-indicator) {
     width: 100%;
     margin-top: 1.5rem;

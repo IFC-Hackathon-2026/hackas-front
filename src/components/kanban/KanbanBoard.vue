@@ -531,4 +531,9 @@ select {
   .column-summary { font-size: 0.75rem; }
   .add-column-button { width: 100%; min-height: 44px; }
 }
+
+@media (max-width: 480px) {
+  .project-select { flex-direction: column; align-items: stretch; }
+  .project-select select { width: 100%; min-width: 0; }
+}
 </style>

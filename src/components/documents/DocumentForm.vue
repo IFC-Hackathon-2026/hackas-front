@@ -209,4 +209,9 @@ select, input[type='file'] {
   .source-options { flex-direction: column; }
   .source-option { flex: none; width: 100%; min-height: 48px; }
 }
+
+@media (max-width: 480px) {
+  .source-options { flex-direction: column; }
+  .source-option { min-width: 0; overflow-wrap: anywhere; }
+}
 </style>

@@ -46,9 +46,14 @@ async function login() {
 
 <template>
   <div class="container">
-    <div class="back-button">
-      <appArrow @back="voltarParaHome" />
-    </div>
+    <button
+      type="button"
+      class="back-button"
+      aria-label="Voltar para a página inicial"
+      @click="voltarParaHome"
+    >
+      <appArrow aria-hidden="true" />
+    </button>
 
     <div class="container-title">
       <img

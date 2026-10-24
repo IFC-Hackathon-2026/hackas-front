@@ -70,7 +70,7 @@ function formatarData(data) {
   font-size: 1.3rem;
   color: #9a9a9a;
   cursor: grab;
-  touch-action: none;
+  touch-action: pan-x pan-y;
 }
 
 .task-drag-handle:active {
@@ -141,7 +141,8 @@ function formatarData(data) {
   border-radius: 10px;
   display: flex;
   gap: 0.5rem;
-  cursor: pointer;
+  cursor: grab;
+  touch-action: pan-x pan-y;
   transition: all .3s ease;
 }
 

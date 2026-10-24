@@ -133,4 +133,10 @@ watch(() => props.projetoId, () => {
   .documents-header p { font-size: 0.875rem; }
   .upload-button, .retry-button { width: 100%; min-height: 44px; }
 }
+
+@media (max-width: 480px) {
+  .documents-header { align-items: stretch; }
+  .documents-header > div { min-width: 0; }
+  .upload-button { width: 100%; }
+}
 </style>
