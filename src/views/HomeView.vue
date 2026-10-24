@@ -106,40 +106,50 @@ onMounted(() => projetoStore.getProjetosDestaque().catch(() => {}))
           </button>
         </div>
 
-        <p v-if="projetoStore.loading" class="estado-destaques">Carregando destaques...</p>
-        <p v-else-if="projetoStore.error" class="estado-destaques">Não foi possível carregar os destaques.</p>
-        <ul v-else-if="eventosDestaque.length" class="lista-eventos">
-          <li
-            v-for="evento in eventosDestaque"
-            :key="evento.id"
-            class="card-evento"
-          >
-            <div class="evento-imagem">
-              <img
-                v-if="evento.foto?.url"
-                :src="evento.foto.url"
-                :alt="evento.nome"
-              />
-            </div>
+<p v-if="projetoStore.loading" class="estado-destaques">
+  Carregando destaques...
+</p>
 
-            <div class="evento-informacoes">
-              <div class="evento-textos">
-                <h3>{{ evento.nome }}</h3>
-                <p>{{ nomeCategoria(evento) }}</p>
-              </div>
+<p v-else-if="projetoStore.error" class="estado-destaques">
+  Não foi possível carregar os destaques.
+</p>
 
-              <button
-                type="button"
-                class="evento-seta"
-                :aria-label="`Explorar eventos a partir de ${evento.nome}`"
-                @click="explorarEventos"
-              >
-                <span class="mdi mdi-arrow-right"></span>
-              </button>
-            </div>
-          </li>
-        </ul>
-        <p v-else class="estado-destaques">Ainda não há eventos em destaque.</p>
+<ul v-else-if="eventosDestaque.length" class="lista-eventos">
+  <li
+    v-for="evento in eventosDestaque"
+    :key="evento.id"
+    class="card-evento"
+    role="link"
+    tabindex="0"
+    :aria-label="`Ver evento ${evento.nome}`"
+    @click="navegarPara(`/eventos/${evento.id}`)"
+    @keydown.enter="navegarPara(`/eventos/${evento.id}`)"
+    @keydown.space.prevent="navegarPara(`/eventos/${evento.id}`)"
+  >
+    <div class="evento-imagem">
+      <img
+        v-if="evento.foto?.url"
+        :src="evento.foto.url"
+        :alt="evento.nome"
+      />
+    </div>
+
+    <div class="evento-informacoes">
+      <div class="evento-textos">
+        <h3>{{ evento.nome }}</h3>
+        <p>{{ nomeCategoria(evento) }}</p>
+      </div>
+
+      <span class="evento-seta" aria-hidden="true">
+        <span class="mdi mdi-arrow-right"></span>
+      </span>
+    </div>
+  </li>
+</ul>
+
+<p v-else class="estado-destaques">
+  Ainda não há eventos em destaque.
+</p>
       </section>
     </div>
 
@@ -183,7 +193,6 @@ onMounted(() => projetoStore.getProjetosDestaque().catch(() => {}))
 .homepage {
   width: 100%;
   color: #071a35;
-  overflow: clip;
 }
 
 
@@ -347,6 +356,7 @@ onMounted(() => projetoStore.getProjetosDestaque().catch(() => {}))
 .card-evento:hover {
   transform: translateY(-8px);
   box-shadow: 0 12px 28px rgb(1 41 95 / 18%);
+  cursor: pointer;
 }
 
 .evento-imagem {
