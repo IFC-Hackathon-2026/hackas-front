@@ -43,6 +43,8 @@ const props = defineProps({
     :title="t.title"
     :end-date="t.endDate"
     :start-date="t.startDate"
+    :categorias="t.categorias"
+    :prioridade="t.prioridade"
     />
     </div>
 

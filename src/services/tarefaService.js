@@ -15,7 +15,10 @@ function tarefaPayload(data) {
 export default class TarefaService {
   getTarefas(projetoId, params = {}) {
     validarProjeto(projetoId)
-    return api.get('/tarefas/', { params: { ...params, projeto: projetoId } })
+    return api.get('/tarefas/', {
+      params: { ...params, projeto: projetoId },
+      paramsSerializer: { indexes: null },
+    })
   }
 
   getTarefa(id, projetoId) {
