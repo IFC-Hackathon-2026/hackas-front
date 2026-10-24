@@ -15,6 +15,7 @@ function criarTarefaBase() {
     criado_em: null,
     atualizado_em: null,
     concluido_em: null,
+    situacao: 'pendente',
     projeto: null,
     status: null,
     criado_por: null,
@@ -51,6 +52,8 @@ export const useTarefaStore = defineStore('tarefa', () => {
   })
 
   const tarefas = ref([])
+  const tarefasAtrasadas = ref([])
+  const totalAtrasadas = ref(0)
   const tarefasFiltradas = computed(() =>
     tarefas.value.filter((item) => {
       if (!filtros.value.prazo) return true
@@ -100,12 +103,26 @@ export const useTarefaStore = defineStore('tarefa', () => {
     if (index === -1) tarefas.value.unshift(tarefa)
     else tarefas.value[index] = tarefa
     if (tarefaAtual.value?.id === tarefa.id) tarefaAtual.value = tarefa
+    const indexAtrasada = tarefasAtrasadas.value.findIndex((item) => item.id === tarefa.id)
+    if (tarefa.situacao === 'atrasada') {
+      if (indexAtrasada === -1) {
+        tarefasAtrasadas.value.unshift(tarefa)
+        totalAtrasadas.value++
+      } else tarefasAtrasadas.value[indexAtrasada] = tarefa
+    } else if (indexAtrasada !== -1) {
+      tarefasAtrasadas.value.splice(indexAtrasada, 1)
+      totalAtrasadas.value = Math.max(0, totalAtrasadas.value - 1)
+    }
   }
 
   function getTarefas(projetoId, params = {}, todas = false) {
     return execute(async () => {
       const requestVersion = ++version
-      if (String(projetoAtualId.value) !== String(projetoId)) tarefas.value = []
+      if (String(projetoAtualId.value) !== String(projetoId)) {
+        tarefas.value = []
+        tarefasAtrasadas.value = []
+        totalAtrasadas.value = 0
+      }
       projetoAtualId.value = projetoId
       let { data } = await tarefaService.getTarefas(projetoId, params)
       const items = [...(data.results ?? data)]
@@ -127,6 +144,23 @@ export const useTarefaStore = defineStore('tarefa', () => {
         previous.value = data.previous ?? null
       }
       return items
+    })
+  }
+
+  function getTarefasAtrasadas(projetoId, params = {}) {
+    return execute(async () => {
+      if (String(projetoAtualId.value) !== String(projetoId)) {
+        tarefas.value = []
+        tarefasAtrasadas.value = []
+        totalAtrasadas.value = 0
+        projetoAtualId.value = projetoId
+      }
+      const { data } = await tarefaService.getTarefasAtrasadas(projetoId, params)
+      if (String(projetoAtualId.value) === String(projetoId)) {
+        tarefasAtrasadas.value = data.results ?? data
+        totalAtrasadas.value = data.count ?? tarefasAtrasadas.value.length
+      }
+      return tarefasAtrasadas.value
     })
   }
 
@@ -218,8 +252,11 @@ export const useTarefaStore = defineStore('tarefa', () => {
       const requestVersion = version
       await tarefaService.deleteTarefa(id, projetoId)
       if (requestVersion === version && String(projetoId) === String(projetoAtualId.value)) {
+        const eraAtrasada = tarefasAtrasadas.value.some((item) => item.id === id)
         tarefas.value = tarefas.value.filter((item) => item.id !== id)
+        tarefasAtrasadas.value = tarefasAtrasadas.value.filter((item) => item.id !== id)
         total.value = Math.max(0, total.value - 1)
+        if (eraAtrasada) totalAtrasadas.value = Math.max(0, totalAtrasadas.value - 1)
         if (tarefaAtual.value?.id === id) tarefaAtual.value = null
       }
     })
@@ -230,6 +267,8 @@ export const useTarefaStore = defineStore('tarefa', () => {
     resetTarefa()
     limparFiltros()
     tarefas.value = []
+    tarefasAtrasadas.value = []
+    totalAtrasadas.value = 0
     tarefaAtual.value = null
     projetoAtualId.value = null
     total.value = 0
@@ -244,6 +283,9 @@ export const useTarefaStore = defineStore('tarefa', () => {
     tarefasFiltradas,
     limparFiltros,
     getTarefasKanban,
+    tarefasAtrasadas,
+    totalAtrasadas,
+    getTarefasAtrasadas,
     tarefa,
     tarefas,
     tarefaAtual,

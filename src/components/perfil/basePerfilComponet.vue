@@ -4,6 +4,7 @@ import { useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/userStore'
 import UserService from '@/services/userService'
 import api from '@/api/config'
+import { notificacao } from '@/services/notificacaoService'
 
 const router = useRouter()
 const userStore = useUserStore()
@@ -40,6 +41,7 @@ onMounted(async () => {
     ready.value = true
   } catch {
     error.value = 'Não foi possível carregar seu perfil.'
+    notificacao.erro(error.value)
   } finally {
     fetching.value = false
   }
@@ -71,14 +73,17 @@ async function saveProfile() {
   message.value = ''
   if (!form.name.trim() || !form.email.trim()) {
     error.value = 'Preencha o nome e o e-mail.'
+    notificacao.aviso(error.value)
     return
   }
   if (file.value && !TIPOS_FOTO.includes(file.value.type)) {
     error.value = 'Selecione uma imagem JPG ou PNG.'
+    notificacao.aviso(error.value)
     return
   }
   if (file.value && file.value.size > TAMANHO_MAX) {
     error.value = 'A imagem deve ter no máximo 5MB.'
+    notificacao.aviso(error.value)
     return
   }
   loading.value = true
@@ -94,7 +99,7 @@ async function saveProfile() {
     form.email = user.email ?? ''
     photoFailed.value = false
     limparFoto()
-    message.value = 'Perfil atualizado com sucesso.'
+    notificacao.sucesso('Perfil atualizado com sucesso.')
   } catch (requestError) {
     const data = requestError.response?.data
     const details = data && typeof data === 'object'
@@ -103,6 +108,7 @@ async function saveProfile() {
         ).join(' ')
       : ''
     error.value = details || 'Não foi possível salvar o perfil. Tente novamente.'
+    notificacao.erro(error.value)
   } finally {
     loading.value = false
   }

@@ -25,14 +25,6 @@ export const useUserStore = defineStore('user', () => {
 
   const isAuthenticated = computed(() => !!accessToken.value);
 
-  const resumoTarefas = computed(() => user.value?.resumo_tarefas ?? {
-    total: 0,
-    concluidas: 0,
-    nao_concluidas: 0,
-    atrasadas: 0,
-    progresso: 0,
-  });
-
   async function getMe() {
     const { data } = await userService.getMe();
     user.value = data;
@@ -107,7 +99,6 @@ export const useUserStore = defineStore('user', () => {
     user,
     users,
     isAuthenticated,
-    resumoTarefas,
     login,
     register,
     logout,
