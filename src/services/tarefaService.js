@@ -18,6 +18,11 @@ export default class TarefaService {
     return api.get('/tarefas/', { params: { ...params, projeto: projetoId } })
   }
 
+  getTarefasAtrasadas(projetoId, params = {}) {
+    validarProjeto(projetoId)
+    return api.get('/tarefas/atrasadas/', { params: { ...params, projeto: projetoId } })
+  }
+
   getTarefa(id, projetoId) {
     validarProjeto(projetoId)
     return api.get(`/tarefas/${id}/`, { params: { projeto: projetoId } })

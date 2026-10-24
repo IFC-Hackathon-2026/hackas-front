@@ -3,7 +3,7 @@ import api from '@/api/config'
 // Somente estes campos são graváveis no ProjetoSerializer.
 function projetoPayload(data) {
   return Object.fromEntries(
-    ['nome', 'descricao', 'foto_attachment_key']
+    ['nome', 'descricao', 'foto_attachment_key', 'categorias']
       .filter((key) => data[key] !== undefined)
       .map((key) => [key, data[key]]),
   )
