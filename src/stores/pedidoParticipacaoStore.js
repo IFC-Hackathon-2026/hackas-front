@@ -85,6 +85,14 @@ export const usePedidoParticipacaoStore = defineStore('pedidoParticipacao', () =
     return responder(id, false)
   }
 
+  function excluirPedido(id) {
+    return execute(async () => {
+      await service.excluirPedido(id)
+      pedidos.value = pedidos.value.filter((item) => item.id !== id)
+      total.value = Math.max(0, total.value - 1)
+    })
+  }
+
   function reset() {
     pedidos.value = []
     total.value = 0
@@ -97,6 +105,6 @@ export const usePedidoParticipacaoStore = defineStore('pedidoParticipacao', () =
     pedidos, total, next, previous, loading, error,
     pendentes, convites, solicitacoes,
     getPedidos, getPendentes, solicitarEntrada, convidarUsuario,
-    aceitarPedido, recusarPedido, reset,
+    aceitarPedido, recusarPedido, excluirPedido, reset,
   }
 })

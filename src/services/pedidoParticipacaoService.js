@@ -27,4 +27,8 @@ export default class PedidoParticipacaoService {
   recusarPedido(id) {
     return api.post(`/pedidos-participacao/${id}/recusar/`)
   }
+
+  excluirPedido(id) {
+    return api.delete(`/pedidos-participacao/${id}/`)
+  }
 }
