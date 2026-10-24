@@ -8,6 +8,7 @@ const projetoStore = useProjetoStore()
 const buscaProjeto = ref('')
 const buscaCategoria = ref('')
 const categoriasSelecionadas = ref([])
+const filtroCategoriasAberto = ref(false)
 let buscaTimer
 
 function filtrarArvore(categorias, termo) {
@@ -76,13 +77,19 @@ onBeforeUnmount(() => window.clearTimeout(buscaTimer))
         <AppInput v-model="buscaProjeto" label="Buscar eventos" type="search" placeholder="Buscar evento..." icon="mdi-magnify" />
       </div>
 
-      <details class="category-filter">
-        <summary>
+      <div class="category-filter">
+        <button
+          type="button"
+          class="category-filter-trigger"
+          :aria-expanded="filtroCategoriasAberto"
+          aria-controls="category-filter-panel"
+          @click="filtroCategoriasAberto = !filtroCategoriasAberto"
+        >
           {{ tituloFiltro }}
           <span class="mdi mdi-chevron-down" aria-hidden="true"></span>
-        </summary>
+        </button>
 
-        <div class="filter-panel">
+        <div v-if="filtroCategoriasAberto" id="category-filter-panel" class="filter-panel">
           <AppInput v-model="buscaCategoria" label="Buscar categorias" type="search" placeholder="Buscar categoria..." icon="mdi-magnify" />
  
           <fieldset>
@@ -115,7 +122,7 @@ onBeforeUnmount(() => window.clearTimeout(buscaTimer))
 
 
         </div>
-      </details>
+      </div>
     </div>
 
     <p v-if="projetoStore.loading" class="results-status">Carregando eventos...</p>
@@ -209,28 +216,29 @@ onBeforeUnmount(() => window.clearTimeout(buscaTimer))
   max-width: 100%;
 }
 
-.category-filter summary {
+.category-filter-trigger {
   display: flex;
   align-items: center;
   justify-content: flex-start;
   gap: 0.5rem;
+  width: 100%;
   min-height: 56px;
+  padding: 0;
+  border: 0;
+  background: transparent;
   color: var(--primaria, #00265c);
+  font-family: inherit;
   font-size: 1.125rem;
   font-weight: 700;
-  list-style: none;
   cursor: pointer;
 }
 
-.category-filter summary::-webkit-details-marker {
-  display: none;
-}
-
-.category-filter summary .mdi {
+.category-filter-trigger .mdi {
   font-size: 1.75rem;
+  transition: transform 0.2s ease;
 }
 
-.category-filter[open] summary .mdi {
+.category-filter-trigger[aria-expanded='true'] .mdi {
   transform: rotate(180deg);
 }
 
@@ -462,7 +470,7 @@ onBeforeUnmount(() => window.clearTimeout(buscaTimer))
     min-width: 0;
     font-size: 16px;
   }
-  .category-filter summary {
+  .category-filter-trigger {
     min-height: 48px;
     font-size: 0.875rem;
     gap: 0.5rem;
